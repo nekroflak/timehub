@@ -61,6 +61,8 @@ export function ApprovalsList({ submissions: initialSubmissions, members }: Appr
     return true
   })
 
+  console.log('[v0] ApprovalsList: total submissions =', submissions.length, '| filtered =', filtered.length, '| filterStatus =', filterStatus, '| filterUserId =', filterUserId)
+
   function openDetail(sub: TimesheetSubmission) {
     setSelected(sub)
     setShowRejectForm(false)
