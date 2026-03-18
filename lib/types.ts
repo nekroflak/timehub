@@ -1,4 +1,5 @@
 export type PlatformRole = 'super_admin' | 'user'
+export type SubmissionStatus = 'draft' | 'submitted' | 'approved' | 'rejected'
 export type OrgRole = 'admin' | 'worker'
 export type OrgStatus = 'active' | 'trial' | 'blocked'
 export type OrgPlan = 'free' | 'pro' | 'enterprise'
@@ -81,6 +82,22 @@ export interface UserConfig {
   hourly_rate: number
   overtime_multiplier: number
   currency: string
+}
+
+export interface TimesheetSubmission {
+  id: string
+  organization_id: string
+  user_id: string
+  year: number
+  month: number
+  status: SubmissionStatus
+  submitted_at: string | null
+  reviewed_at: string | null
+  reviewed_by: string | null
+  comment: string | null
+  created_at: string
+  updated_at: string
+  profile?: Pick<Profile, 'full_name' | 'email'>
 }
 
 // Resolved user context used across layouts

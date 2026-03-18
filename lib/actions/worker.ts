@@ -295,6 +295,53 @@ export async function deleteTimeEntry(entryId: string): Promise<{ error?: string
   return { success: true }
 }
 
+// Timesheet Submissions
+export async function getTimesheetSubmission(month: string) {
+  const ctx = await getWorkerContext()
+  if (!ctx) return null
+
+  const [year, monthNum] = month.split('-').map(Number)
+
+  const { data } = await ctx.supabase
+    .from('timesheet_submissions')
+    .select('*')
+    .eq('user_id', ctx.user.id)
+    .eq('organization_id', ctx.organizationId)
+    .eq('year', year)
+    .eq('month', monthNum)
+    .single()
+
+  return data || null
+}
+
+export async function submitTimesheet(month: string): Promise<{ error?: string; success?: boolean }> {
+  const ctx = await getWorkerContext()
+  if (!ctx) return { error: 'Unauthorized' }
+
+  const [year, monthNum] = month.split('-').map(Number)
+  const now = new Date().toISOString()
+
+  const { error } = await ctx.supabase
+    .from('timesheet_submissions')
+    .upsert({
+      organization_id: ctx.organizationId,
+      user_id: ctx.user.id,
+      year,
+      month: monthNum,
+      status: 'submitted',
+      submitted_at: now,
+      reviewed_at: null,
+      reviewed_by: null,
+      comment: null,
+      updated_at: now,
+    }, { onConflict: 'organization_id,user_id,year,month' })
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/workspace/time')
+  return { success: true }
+}
+
 // Notes
 export async function getMyNotes() {
   const ctx = await getWorkerContext()

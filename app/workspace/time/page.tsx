@@ -1,4 +1,4 @@
-import { getMyTimeEntries, getMonthlySummary, getUserConfig, getWorkerStats } from '@/lib/actions/worker'
+import { getMyTimeEntries, getMonthlySummary, getUserConfig, getWorkerStats, getTimesheetSubmission } from '@/lib/actions/worker'
 import { WorkspaceTimeClient } from '@/components/workspace/workspace-time-client'
 import { createClient } from '@/lib/supabase/server'
 
@@ -9,11 +9,12 @@ export default async function TimeTrackingPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [entries, summary, config, stats] = await Promise.all([
+  const [entries, summary, config, stats, submission] = await Promise.all([
     getMyTimeEntries(currentMonth),
     getMonthlySummary(currentMonth),
     getUserConfig(),
     getWorkerStats(),
+    getTimesheetSubmission(currentMonth),
   ])
 
   const { data: profile } = user
@@ -36,6 +37,7 @@ export default async function TimeTrackingPage() {
         initialMonth={currentMonth}
         initialEntries={entries}
         initialSummary={summary}
+        initialSubmission={submission}
         config={pdfConfig}
       />
     </div>
