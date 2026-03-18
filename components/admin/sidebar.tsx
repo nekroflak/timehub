@@ -11,6 +11,7 @@ import {
   Clock,
   LogOut,
   Building2,
+  CheckSquare,
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Team', href: '/admin/team', icon: Users },
   { name: 'Time Reports', href: '/admin/time-reports', icon: Clock },
+  { name: 'Zatwierdzenia', href: '/admin/approvals', icon: CheckSquare },
 ]
 
 export function AdminSidebar({ user, organization }: AdminSidebarProps) {

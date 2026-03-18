@@ -39,13 +39,14 @@ interface TimeTrackingCalendarProps {
   initialEntries: TimeEntry[]
   summary: MonthlySummary | null
   initialMonth: string // e.g. "2026-03"
+  isLocked?: boolean
   onMonthChange?: (yearMonth: string) => void
   onEntriesChange?: (entries: TimeEntry[], summary: MonthlySummary | null) => void
 }
 
 type EntryType = 'work' | 'vacation'
 
-export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, initialMonth, onMonthChange, onEntriesChange }: TimeTrackingCalendarProps) {
+export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, initialMonth, isLocked = false, onMonthChange, onEntriesChange }: TimeTrackingCalendarProps) {
   const [yearMonth, setYearMonth] = useState(initialMonth) // single source of truth
   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -111,6 +112,7 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
   }
 
   function handleDateClick(day: number) {
+    if (isLocked) return // block all edits when submitted/approved
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const existing = getEntryForDate(date)
     setSelectedDate(date)
@@ -218,8 +220,10 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
       <button
         key={day}
         onClick={() => handleDateClick(day)}
+        disabled={isLocked}
         className={cn(
-          'h-20 p-2 border rounded-md text-left transition-colors hover:bg-muted',
+          'h-20 p-2 border rounded-md text-left transition-colors',
+          isLocked ? 'cursor-not-allowed opacity-75' : 'hover:bg-muted',
           isToday && 'ring-2 ring-primary',
           isVacation && 'bg-amber-50 border-amber-200',
           isWork && 'bg-primary/10 border-primary/20',
