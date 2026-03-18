@@ -15,13 +15,16 @@ export default async function SuperAdminLayout({
     redirect('/auth/login')
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('is_super_admin, full_name, email')
     .eq('id', user.id)
     .single()
 
+  console.log('[v0] Super admin layout - profile query:', { profile, error: profileError?.message })
+
   if (!profile?.is_super_admin) {
+    console.log('[v0] Super admin layout - not super admin, redirecting to /')
     redirect('/')
   }
 
