@@ -168,12 +168,14 @@ export function TimeReportsList({ entries }: TimeReportsListProps) {
         {/* All entries tab */}
         <TabsContent value="entries" className="mt-4">
           <Card>
-            <Table>
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Pracownik</TableHead>
                   <TableHead>Typ</TableHead>
+                  <TableHead>Od</TableHead>
+                  <TableHead>Do</TableHead>
                   <TableHead>Godziny</TableHead>
                   <TableHead>Opis</TableHead>
                 </TableRow>
@@ -202,6 +204,12 @@ export function TimeReportsList({ entries }: TimeReportsListProps) {
                           Praca
                         </Badge>
                       )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {entry.type === 'vacation' ? '—' : (entry.start_time || '—')}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {entry.type === 'vacation' ? '—' : (entry.end_time || '—')}
                     </TableCell>
                     <TableCell>
                       {entry.type === 'vacation' ? (

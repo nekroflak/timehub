@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createTimeEntry, deleteTimeEntry } from '@/lib/actions/worker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -50,6 +50,9 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [entryType, setEntryType] = useState<EntryType>('work')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('17:00')
+  const [calculatedHours, setCalculatedHours] = useState<number | null>(null)
 
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth()
@@ -75,11 +78,25 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
     setCurrentDate(new Date(year, month + 1, 1))
   }
 
+  function calcHours(start: string, end: string): number | null {
+    const [sh, sm] = start.split(':').map(Number)
+    const [eh, em] = end.split(':').map(Number)
+    const diff = (eh * 60 + em) - (sh * 60 + sm)
+    if (diff <= 0) return null
+    return Math.round(diff / 60 * 10) / 10
+  }
+
   function handleDateClick(day: number) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const existing = getEntryForDate(date)
     setSelectedDate(date)
     setEntryType((existing?.type as EntryType) || 'work')
+    // Pre-fill times from existing entry if available
+    const st = existing?.start_time || '09:00'
+    const et = existing?.end_time || '17:00'
+    setStartTime(st)
+    setEndTime(et)
+    setCalculatedHours(calcHours(st, et))
     setDialogOpen(true)
     setError(null)
   }
@@ -91,6 +108,10 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
 
     formData.append('date', selectedDate)
     formData.set('type', entryType)
+    if (entryType === 'work') {
+      formData.set('start_time', startTime)
+      formData.set('end_time', endTime)
+    }
 
     const result = await createTimeEntry(formData)
 
@@ -100,29 +121,28 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
     } else {
       const hours = entryType === 'vacation'
         ? (initialSummary?.hoursPerDay || 8)
-        : parseFloat(formData.get('hours') as string)
+        : (result.hours ?? calculatedHours ?? 8)
       const description = formData.get('description') as string
 
       setEntries(prev => {
         const existing = prev.find(e => e.date === selectedDate)
-        if (existing) {
-          return prev.map(e => e.date === selectedDate
-            ? { ...e, hours, type: entryType, description }
-            : e)
-        }
-        return [...prev, {
-          id: Date.now().toString(),
+        const updated = {
+          id: existing?.id || Date.now().toString(),
           user_id: '',
           organization_id: '',
           date: selectedDate,
           hours,
           type: entryType,
-          start_time: null,
-          end_time: null,
+          start_time: entryType === 'work' ? startTime : null,
+          end_time: entryType === 'work' ? endTime : null,
           description,
-          created_at: new Date().toISOString(),
+          created_at: existing?.created_at || new Date().toISOString(),
           updated_at: new Date().toISOString(),
-        }]
+        }
+        if (existing) {
+          return prev.map(e => e.date === selectedDate ? updated : e)
+        }
+        return [...prev, updated]
       })
 
       setDialogOpen(false)
@@ -208,6 +228,11 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
         )}
         {isWork && (
           <div className="mt-1">
+            {entry.start_time && entry.end_time ? (
+              <span className="text-xs text-primary font-medium block">
+                {entry.start_time}–{entry.end_time}
+              </span>
+            ) : null}
             <span className="text-xs font-semibold text-primary">{(entry.hours || 0).toFixed(1)}h</span>
             {(entry.hours || 0) > hoursPerDay && (
               <span className="ml-1 text-xs text-orange-500 font-medium">OT</span>
@@ -371,24 +396,51 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
                   Urlop — odejmie pełny dzień ({hoursPerDay}h) z normy miesięcznej
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="hours">Godziny pracy</Label>
-                  <Input
-                    id="hours"
-                    name="hours"
-                    type="number"
-                    step="0.5"
-                    min="0.5"
-                    max="24"
-                    defaultValue={selectedEntry?.type === 'work' ? (selectedEntry?.hours || 8) : 8}
-                    required
-                  />
-                  {selectedEntry?.type === 'work' && (selectedEntry.hours || 0) > hoursPerDay && (
-                    <div className="flex items-center gap-1.5 text-xs text-orange-600">
-                      <TrendingUp className="h-3 w-3" />
-                      {((selectedEntry.hours || 0) - hoursPerDay).toFixed(1)}h nadgodzin w tym dniu
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="start_time">Od</Label>
+                      <Input
+                        id="start_time"
+                        name="start_time"
+                        type="time"
+                        value={startTime}
+                        onChange={e => {
+                          setStartTime(e.target.value)
+                          setCalculatedHours(calcHours(e.target.value, endTime))
+                        }}
+                        required
+                      />
                     </div>
-                  )}
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="end_time">Do</Label>
+                      <Input
+                        id="end_time"
+                        name="end_time"
+                        type="time"
+                        value={endTime}
+                        onChange={e => {
+                          setEndTime(e.target.value)
+                          setCalculatedHours(calcHours(startTime, e.target.value))
+                        }}
+                        required
+                      />
+                    </div>
+                  </div>
+                  {calculatedHours !== null && calculatedHours > 0 ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Razem:</span>
+                      <span className="font-semibold text-primary">{calculatedHours.toFixed(1)}h</span>
+                      {calculatedHours > hoursPerDay && (
+                        <span className="flex items-center gap-1 text-xs text-orange-600">
+                          <TrendingUp className="h-3 w-3" />
+                          +{(calculatedHours - hoursPerDay).toFixed(1)}h nadgodzin
+                        </span>
+                      )}
+                    </div>
+                  ) : calculatedHours !== null ? (
+                    <p className="text-xs text-destructive">Czas zakończenia musi być późniejszy niż czas rozpoczęcia</p>
+                  ) : null}
                 </div>
               )}
 
