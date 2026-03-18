@@ -18,6 +18,7 @@ import type { TimeEntry, Profile } from '@/lib/types'
 
 interface TimeReportsListProps {
   entries: (TimeEntry & { profile: Pick<Profile, 'full_name' | 'email'> | null })[]
+  selectedMonth: string // e.g. "2026-04"
 }
 
 interface MemberSummary {
@@ -27,15 +28,23 @@ interface MemberSummary {
   overtimeHours: number
 }
 
-export function TimeReportsList({ entries }: TimeReportsListProps) {
+const MONTH_NAMES = [
+  'Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec',
+  'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień',
+]
+
+export function TimeReportsList({ entries, selectedMonth }: TimeReportsListProps) {
+  const [year, month] = selectedMonth.split('-').map(Number)
+  const monthLabel = `${MONTH_NAMES[month - 1]} ${year}`
+
   if (entries.length === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Clock className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">Brak wpisów</h3>
+          <h3 className="text-lg font-semibold">Brak wpisów w {monthLabel}</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Wpisy czasu pracy pojawią się tutaj
+            Brak wpisów czasu pracy dla wybranego miesiąca
           </p>
         </CardContent>
       </Card>
@@ -122,7 +131,7 @@ export function TimeReportsList({ entries }: TimeReportsListProps) {
         <TabsContent value="summary" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Podsumowanie per pracownik</CardTitle>
+              <CardTitle className="text-base">Podsumowanie per pracownik — {monthLabel}</CardTitle>
             </CardHeader>
             <Table>
               <TableHeader>

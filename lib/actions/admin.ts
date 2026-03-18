@@ -32,6 +32,7 @@ export async function getAdminStats() {
 
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
 
   const [membersResult, hoursResult, pendingInvitesResult] = await Promise.all([
     ctx.supabase
@@ -42,7 +43,8 @@ export async function getAdminStats() {
       .from('time_entries')
       .select('hours')
       .eq('organization_id', ctx.organizationId)
-      .gte('date', startOfMonth),
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth),
     ctx.supabase
       .from('invitations')
       .select('id', { count: 'exact', head: true })
