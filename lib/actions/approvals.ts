@@ -28,11 +28,18 @@ export async function getOrgSubmissions(opts?: {
   status?: string
 }): Promise<TimesheetSubmission[]> {
   const ctx = await getAdminContext()
-  if (!ctx) return []
+  if (!ctx) {
+    console.log('[v0] getOrgSubmissions: no admin context, returning []')
+    return []
+  }
 
+  console.log('[v0] getOrgSubmissions: organizationId =', ctx.organizationId)
+  console.log('[v0] getOrgSubmissions: opts =', JSON.stringify(opts))
+
+  // Step 1: fetch raw submissions WITHOUT profile join to avoid RLS-related row drops
   let query = ctx.supabase
     .from('timesheet_submissions')
-    .select('*, profile:profiles(full_name, email)')
+    .select('*')
     .eq('organization_id', ctx.organizationId)
     .order('year', { ascending: false })
     .order('month', { ascending: false })
@@ -49,15 +56,39 @@ export async function getOrgSubmissions(opts?: {
     query = query.eq('status', opts.status)
   }
 
-  const { data } = await query
-  return (data || []) as TimesheetSubmission[]
+  const { data: rawSubmissions, error } = await query
+
+  console.log('[v0] getOrgSubmissions: rawSubmissions count =', rawSubmissions?.length ?? 0)
+  if (error) console.log('[v0] getOrgSubmissions: query error =', error.message)
+
+  if (!rawSubmissions || rawSubmissions.length === 0) return []
+
+  // Step 2: fetch profiles separately for the unique user_ids found
+  const userIds = [...new Set(rawSubmissions.map(s => s.user_id))]
+
+  const { data: profiles } = await ctx.supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+
+  console.log('[v0] getOrgSubmissions: profiles fetched =', profiles?.length ?? 0)
+
+  // Step 3: merge profiles into submissions
+  const profileMap = new Map((profiles || []).map(p => [p.id, { full_name: p.full_name, email: p.email }]))
+
+  const merged = rawSubmissions.map(sub => ({
+    ...sub,
+    profile: profileMap.get(sub.user_id) ?? null,
+  }))
+
+  console.log('[v0] getOrgSubmissions: final merged count =', merged.length)
+  return merged as TimesheetSubmission[]
 }
 
 export async function approveSubmission(submissionId: string): Promise<{ error?: string; success?: boolean }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  // Verify submission belongs to admin's org
   const { data: submission } = await ctx.supabase
     .from('timesheet_submissions')
     .select('id, organization_id')
@@ -120,10 +151,25 @@ export async function getOrgMembers() {
   const ctx = await getAdminContext()
   if (!ctx) return []
 
-  const { data } = await ctx.supabase
+  // Same pattern: fetch members then profiles separately
+  const { data: members } = await ctx.supabase
     .from('organization_members')
-    .select('user_id, profile:profiles(full_name, email)')
+    .select('user_id')
     .eq('organization_id', ctx.organizationId)
 
-  return (data || []) as { user_id: string; profile: { full_name: string | null; email: string } | null }[]
+  if (!members || members.length === 0) return []
+
+  const userIds = members.map(m => m.user_id)
+
+  const { data: profiles } = await ctx.supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+
+  const profileMap = new Map((profiles || []).map(p => [p.id, { full_name: p.full_name, email: p.email }]))
+
+  return members.map(m => ({
+    user_id: m.user_id,
+    profile: profileMap.get(m.user_id) ?? null,
+  })) as { user_id: string; profile: { full_name: string | null; email: string } | null }[]
 }
