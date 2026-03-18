@@ -15,24 +15,18 @@ export default async function SuperAdminLayout({
     redirect('/auth/login')
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('is_super_admin, full_name, email')
-    .eq('id', user.id)
-    .single()
+  // Use app_metadata to check super admin - avoids querying profiles table (RLS recursion)
+  const isSuperAdmin = user.app_metadata?.is_super_admin === true
 
-  console.log('[v0] super-admin layout profile:', profile, 'error:', profileError?.message)
-
-  if (!profile?.is_super_admin) {
-    console.log('[v0] super-admin layout: not super admin, redirecting to /')
+  if (!isSuperAdmin) {
     redirect('/')
   }
 
   return (
     <div className="flex min-h-screen">
       <SuperAdminSidebar user={{ 
-        name: profile.full_name || profile.email, 
-        email: profile.email 
+        name: user.user_metadata?.full_name || user.email || 'Super Admin',
+        email: user.email || '',
       }} />
       <main className="flex-1 bg-muted/30">
         {children}

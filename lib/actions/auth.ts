@@ -24,15 +24,10 @@ export async function login(formData: FormData): Promise<{ error?: string; redir
     return { error: 'Authentication failed' }
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('is_super_admin')
-    .eq('id', user.id)
-    .single()
-
   revalidatePath('/', 'layout')
 
-  if (profile?.is_super_admin) {
+  // Use app_metadata to avoid RLS profile queries
+  if (user.app_metadata?.is_super_admin === true) {
     return { redirectTo: '/super-admin' }
   }
 
