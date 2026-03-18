@@ -84,6 +84,7 @@ export async function getWorkerStats() {
 
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
 
   const [monthEntriesResult, notesResult, configResult] = await Promise.all([
     ctx.supabase
@@ -91,7 +92,8 @@ export async function getWorkerStats() {
       .select('hours, type')
       .eq('user_id', ctx.user.id)
       .eq('organization_id', ctx.organizationId)
-      .gte('date', startOfMonth),
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth),
     ctx.supabase
       .from('notes')
       .select('id', { count: 'exact', head: true })

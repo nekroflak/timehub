@@ -1,6 +1,5 @@
 import { getMyTimeEntries, getMonthlySummary, getUserConfig, getWorkerStats } from '@/lib/actions/worker'
-import { TimeTrackingCalendar } from '@/components/workspace/time-tracking-calendar'
-import { DownloadPdfButton } from '@/components/workspace/download-pdf-button'
+import { WorkspaceTimeClient } from '@/components/workspace/workspace-time-client'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function TimeTrackingPage() {
@@ -11,13 +10,12 @@ export default async function TimeTrackingPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   const [entries, summary, config, stats] = await Promise.all([
-    getMyTimeEntries(),
-    getMonthlySummary(),
+    getMyTimeEntries(currentMonth),
+    getMonthlySummary(currentMonth),
     getUserConfig(),
     getWorkerStats(),
   ])
 
-  // Fetch profile for name
   const { data: profile } = user
     ? await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
     : { data: null }
@@ -31,24 +29,15 @@ export default async function TimeTrackingPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Czas pracy</h1>
-          <p className="text-muted-foreground mt-1">
-            Rejestruj godziny pracy i urlopy
-          </p>
-        </div>
-        <DownloadPdfButton
-          orgName={stats?.organizationName ?? 'Organizacja'}
-          workerName={profile?.full_name ?? ''}
-          workerEmail={profile?.email ?? user?.email ?? ''}
-          month={currentMonth}
-          entries={entries}
-          config={pdfConfig}
-        />
-      </div>
-
-      <TimeTrackingCalendar initialEntries={entries} summary={summary} initialMonth={currentMonth} />
+      <WorkspaceTimeClient
+        orgName={stats?.organizationName ?? 'Organizacja'}
+        workerName={profile?.full_name ?? ''}
+        workerEmail={profile?.email ?? user?.email ?? ''}
+        initialMonth={currentMonth}
+        initialEntries={entries}
+        initialSummary={summary}
+        config={pdfConfig}
+      />
     </div>
   )
 }

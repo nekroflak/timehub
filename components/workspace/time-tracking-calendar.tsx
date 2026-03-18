@@ -39,11 +39,13 @@ interface TimeTrackingCalendarProps {
   initialEntries: TimeEntry[]
   summary: MonthlySummary | null
   initialMonth: string // e.g. "2026-03"
+  onMonthChange?: (yearMonth: string) => void
+  onEntriesChange?: (entries: TimeEntry[], summary: MonthlySummary | null) => void
 }
 
 type EntryType = 'work' | 'vacation'
 
-export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, initialMonth }: TimeTrackingCalendarProps) {
+export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, initialMonth, onMonthChange, onEntriesChange }: TimeTrackingCalendarProps) {
   const [yearMonth, setYearMonth] = useState(initialMonth) // single source of truth
   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries)
   const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
@@ -74,14 +76,13 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
   }
 
   function navigateToMonth(newYear: number, newMonth0: number) {
-    // Clamp month: newMonth0 is 0-indexed
     let y = newYear
     let m = newMonth0
     if (m < 0) { y--; m = 11 }
     if (m > 11) { y++; m = 0 }
     const ym = `${y}-${String(m + 1).padStart(2, '0')}`
     setYearMonth(ym)
-    // Fetch entries and summary for the new month
+    onMonthChange?.(ym) // notify parent so PDF button stays in sync
     startFetching(async () => {
       const [newEntries, newSummary] = await Promise.all([
         getMyTimeEntries(ym),
@@ -89,6 +90,7 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
       ])
       setEntries(newEntries)
       setSummary(newSummary)
+      onEntriesChange?.(newEntries, newSummary) // notify parent
     })
   }
 
@@ -130,6 +132,7 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
     ])
     setEntries(newEntries)
     setSummary(newSummary)
+    onEntriesChange?.(newEntries, newSummary) // keep parent in sync after save/delete
   }
 
   async function handleSubmit(formData: FormData) {
