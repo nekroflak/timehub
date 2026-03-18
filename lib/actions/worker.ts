@@ -205,30 +205,39 @@ export async function getMonthlySummary(month?: string) {
   }
 }
 
-export async function createTimeEntry(formData: FormData): Promise<{ error?: string; success?: boolean }> {
+export async function createTimeEntry(formData: FormData): Promise<{ error?: string; success?: boolean; hours?: number }> {
   const ctx = await getWorkerContext()
   if (!ctx) return { error: 'Unauthorized' }
 
   const date = formData.get('date') as string
   const type = (formData.get('type') as string) || 'work'
   const description = formData.get('description') as string
+  const start_time = (formData.get('start_time') as string) || null
+  const end_time = (formData.get('end_time') as string) || null
 
   let hours: number
 
   if (type === 'vacation') {
-    // For vacation, get hours_per_day from config
     const { data: config } = await ctx.supabase
       .from('user_config')
       .select('hours_per_day')
       .eq('user_id', ctx.user.id)
       .single()
     hours = config?.hours_per_day || 8
+  } else if (start_time && end_time) {
+    // Calculate hours from start/end time
+    const [sh, sm] = start_time.split(':').map(Number)
+    const [eh, em] = end_time.split(':').map(Number)
+    const startMins = sh * 60 + sm
+    const endMins = eh * 60 + em
+    if (endMins <= startMins) return { error: 'Czas zakończenia musi być późniejszy niż czas rozpoczęcia' }
+    hours = Math.round((endMins - startMins) / 60 * 10) / 10
+    if (hours <= 0 || hours > 24) return { error: 'Nieprawidłowy zakres czasu' }
   } else {
     hours = parseFloat(formData.get('hours') as string)
-    if (isNaN(hours) || hours <= 0 || hours > 24) return { error: 'Hours must be between 0 and 24' }
+    if (isNaN(hours) || hours <= 0 || hours > 24) return { error: 'Godziny muszą być między 0 a 24' }
   }
 
-  // Check if entry exists for this date
   const { data: existing } = await ctx.supabase
     .from('time_entries')
     .select('id')
@@ -237,19 +246,20 @@ export async function createTimeEntry(formData: FormData): Promise<{ error?: str
     .eq('date', date)
     .single()
 
+  const payload = {
+    hours,
+    type,
+    description: description || null,
+    start_time: type === 'vacation' ? null : (start_time || null),
+    end_time: type === 'vacation' ? null : (end_time || null),
+    updated_at: new Date().toISOString(),
+  }
+
   if (existing) {
     const { error } = await ctx.supabase
       .from('time_entries')
-      .update({
-        hours,
-        type,
-        description: description || null,
-        start_time: type === 'vacation' ? null : undefined,
-        end_time: type === 'vacation' ? null : undefined,
-        updated_at: new Date().toISOString()
-      })
+      .update(payload)
       .eq('id', existing.id)
-
     if (error) return { error: error.message }
   } else {
     const { error } = await ctx.supabase
@@ -258,18 +268,13 @@ export async function createTimeEntry(formData: FormData): Promise<{ error?: str
         user_id: ctx.user.id,
         organization_id: ctx.organizationId,
         date,
-        hours,
-        type,
-        start_time: null,
-        end_time: null,
-        description: description || null,
+        ...payload,
       })
-
     if (error) return { error: error.message }
   }
 
   revalidatePath('/workspace/time')
-  return { success: true }
+  return { success: true, hours }
 }
 
 export async function deleteTimeEntry(entryId: string): Promise<{ error?: string; success?: boolean }> {
