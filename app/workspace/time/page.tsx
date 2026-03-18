@@ -48,7 +48,7 @@ export default async function TimeTrackingPage() {
         />
       </div>
 
-      <TimeTrackingCalendar initialEntries={entries} summary={summary} />
+      <TimeTrackingCalendar initialEntries={entries} summary={summary} initialMonth={currentMonth} />
     </div>
   )
 }

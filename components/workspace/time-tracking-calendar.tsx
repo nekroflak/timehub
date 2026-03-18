@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createTimeEntry, deleteTimeEntry } from '@/lib/actions/worker'
+import { useState, useEffect, useTransition } from 'react'
+import { createTimeEntry, deleteTimeEntry, getMyTimeEntries, getMonthlySummary } from '@/lib/actions/worker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,24 +38,27 @@ interface MonthlySummary {
 interface TimeTrackingCalendarProps {
   initialEntries: TimeEntry[]
   summary: MonthlySummary | null
+  initialMonth: string // e.g. "2026-03"
 }
 
 type EntryType = 'work' | 'vacation'
 
-export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }: TimeTrackingCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date())
+export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, initialMonth }: TimeTrackingCalendarProps) {
+  const [yearMonth, setYearMonth] = useState(initialMonth) // single source of truth
   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries)
+  const [summary, setSummary] = useState<MonthlySummary | null>(initialSummary)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isFetching, startFetching] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [entryType, setEntryType] = useState<EntryType>('work')
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('17:00')
   const [calculatedHours, setCalculatedHours] = useState<number | null>(null)
 
-  const year = currentDate.getFullYear()
-  const month = currentDate.getMonth()
+  const [year, monthIdx] = yearMonth.split('-').map(Number)
+  const month = monthIdx - 1 // 0-indexed for Date constructor
 
   const firstDayOfMonth = new Date(year, month, 1)
   const lastDayOfMonth = new Date(year, month + 1, 0)
@@ -64,18 +67,37 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
   const startDay = rawStartDay === 0 ? 6 : rawStartDay - 1
   const daysInMonth = lastDayOfMonth.getDate()
 
-  const monthName = currentDate.toLocaleString('pl-PL', { month: 'long', year: 'numeric' })
+  const monthName = new Date(year, month, 1).toLocaleString('pl-PL', { month: 'long', year: 'numeric' })
 
   function getEntryForDate(date: string) {
     return entries.find(e => e.date === date)
   }
 
+  function navigateToMonth(newYear: number, newMonth0: number) {
+    // Clamp month: newMonth0 is 0-indexed
+    let y = newYear
+    let m = newMonth0
+    if (m < 0) { y--; m = 11 }
+    if (m > 11) { y++; m = 0 }
+    const ym = `${y}-${String(m + 1).padStart(2, '0')}`
+    setYearMonth(ym)
+    // Fetch entries and summary for the new month
+    startFetching(async () => {
+      const [newEntries, newSummary] = await Promise.all([
+        getMyTimeEntries(ym),
+        getMonthlySummary(ym),
+      ])
+      setEntries(newEntries)
+      setSummary(newSummary)
+    })
+  }
+
   function handlePrevMonth() {
-    setCurrentDate(new Date(year, month - 1, 1))
+    navigateToMonth(year, month - 1)
   }
 
   function handleNextMonth() {
-    setCurrentDate(new Date(year, month + 1, 1))
+    navigateToMonth(year, month + 1)
   }
 
   function calcHours(start: string, end: string): number | null {
@@ -169,28 +191,13 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
 
   const selectedEntry = selectedDate ? getEntryForDate(selectedDate) : null
 
-  // Compute local summary from current entries
-  const hoursPerDay = initialSummary?.hoursPerDay || 8
-  const workEntries = entries.filter(e => e.type === 'work')
-  const vacationEntries = entries.filter(e => e.type === 'vacation')
-  const workHours = workEntries.reduce((sum, e) => sum + (e.hours || 0), 0)
-  const vacationDays = vacationEntries.length
-
-  // Count working days in current month
-  function countWorkingDays(y: number, m: number) {
-    const days = new Date(y, m + 1, 0).getDate()
-    let count = 0
-    for (let d = 1; d <= days; d++) {
-      const dow = new Date(y, m, d).getDay()
-      if (dow !== 0 && dow !== 6) count++
-    }
-    return count
-  }
-  const workingDays = countWorkingDays(year, month)
-  const effectiveDays = Math.max(0, workingDays - vacationDays)
-  const expectedHours = effectiveDays * hoursPerDay
-  const overtimeHours = Math.max(0, workHours - expectedHours)
-  const undertimeHours = Math.max(0, expectedHours - workHours)
+  // Derive summary from fetched `summary` (always matches current month)
+  const hoursPerDay = summary?.hoursPerDay || 8
+  const workHours = summary?.workHours ?? entries.filter(e => e.type === 'work').reduce((sum, e) => sum + (e.hours || 0), 0)
+  const vacationDays = summary?.vacationDays ?? entries.filter(e => e.type === 'vacation').length
+  const expectedHours = summary?.expectedHours ?? 0
+  const overtimeHours = summary?.overtimeHours ?? Math.max(0, workHours - expectedHours)
+  const undertimeHours = summary?.undertimeHours ?? Math.max(0, expectedHours - workHours)
 
   // Build calendar grid (Mon–Sun)
   const days = []
@@ -295,10 +302,10 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
           <div className="flex items-center justify-between">
             <CardTitle className="capitalize">{monthName}</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+              <Button variant="outline" size="icon" onClick={handlePrevMonth} disabled={isFetching}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+              <Button variant="outline" size="icon" onClick={handleNextMonth} disabled={isFetching}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -312,7 +319,7 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary }
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-2">
+          <div className={cn('grid grid-cols-7 gap-2 transition-opacity', isFetching && 'opacity-50 pointer-events-none')}>
             {days}
           </div>
 
