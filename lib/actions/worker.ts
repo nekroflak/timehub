@@ -20,6 +20,64 @@ async function getWorkerContext() {
   return { supabase, user, membership, organizationId: membership.organization_id }
 }
 
+// Returns working days in a month (Mon–Fri)
+function countWorkingDays(year: number, month: number): number {
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  let count = 0
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month, d).getDay()
+    if (dow !== 0 && dow !== 6) count++
+  }
+  return count
+}
+
+export async function getUserConfig() {
+  const ctx = await getWorkerContext()
+  if (!ctx) return null
+
+  const { data } = await ctx.supabase
+    .from('user_config')
+    .select('*')
+    .eq('user_id', ctx.user.id)
+    .single()
+
+  if (data) return data
+
+  // Return defaults if no config exists
+  return {
+    hours_per_day: 8,
+    hourly_rate: 50,
+    overtime_multiplier: 1.5,
+    currency: 'PLN',
+  }
+}
+
+export async function upsertUserConfig(formData: FormData): Promise<{ error?: string; success?: boolean }> {
+  const ctx = await getWorkerContext()
+  if (!ctx) return { error: 'Unauthorized' }
+
+  const hours_per_day = parseFloat(formData.get('hours_per_day') as string) || 8
+  const hourly_rate = parseFloat(formData.get('hourly_rate') as string) || 50
+  const overtime_multiplier = parseFloat(formData.get('overtime_multiplier') as string) || 1.5
+  const currency = (formData.get('currency') as string) || 'PLN'
+
+  const { error } = await ctx.supabase
+    .from('user_config')
+    .upsert({
+      user_id: ctx.user.id,
+      organization_id: ctx.organizationId,
+      hours_per_day,
+      hourly_rate,
+      overtime_multiplier,
+      currency,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' })
+
+  if (error) return { error: error.message }
+  revalidatePath('/workspace/time')
+  return { success: true }
+}
+
 export async function getWorkerStats() {
   const ctx = await getWorkerContext()
   if (!ctx) return null
@@ -27,10 +85,10 @@ export async function getWorkerStats() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
 
-  const [monthHoursResult, notesResult] = await Promise.all([
+  const [monthEntriesResult, notesResult, configResult] = await Promise.all([
     ctx.supabase
       .from('time_entries')
-      .select('hours')
+      .select('hours, type')
       .eq('user_id', ctx.user.id)
       .eq('organization_id', ctx.organizationId)
       .gte('date', startOfMonth),
@@ -39,12 +97,28 @@ export async function getWorkerStats() {
       .select('id', { count: 'exact', head: true })
       .eq('user_id', ctx.user.id)
       .eq('organization_id', ctx.organizationId),
+    ctx.supabase
+      .from('user_config')
+      .select('hours_per_day')
+      .eq('user_id', ctx.user.id)
+      .single(),
   ])
 
-  const monthHours = monthHoursResult.data?.reduce((sum, e) => sum + (e.hours || 0), 0) || 0
+  const hoursPerDay = configResult.data?.hours_per_day || 8
+  const workingDays = countWorkingDays(now.getFullYear(), now.getMonth())
+  const entries = monthEntriesResult.data || []
+
+  const workHours = entries.filter(e => e.type === 'work').reduce((sum, e) => sum + (e.hours || 0), 0)
+  const vacationDays = entries.filter(e => e.type === 'vacation').length
+  const vacationHours = vacationDays * hoursPerDay
+  const expectedHours = Math.max(0, (workingDays - vacationDays) * hoursPerDay)
+  const overtimeHours = Math.max(0, workHours - expectedHours)
 
   return {
-    hoursThisMonth: monthHours,
+    hoursThisMonth: workHours,
+    vacationDays,
+    overtimeHours,
+    expectedHours,
     totalNotes: notesResult.count || 0,
     organizationName: (ctx.membership.organization as any)?.name || 'Organization',
   }
@@ -73,18 +147,88 @@ export async function getMyTimeEntries(month?: string) {
   return data || []
 }
 
+export async function getMonthlySummary(month?: string) {
+  const ctx = await getWorkerContext()
+  if (!ctx) return null
+
+  const now = new Date()
+  const targetMonth = month || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [year, monthNum] = targetMonth.split('-').map(Number)
+
+  const startDate = new Date(year, monthNum - 1, 1).toISOString().split('T')[0]
+  const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0]
+
+  const [entriesResult, configResult] = await Promise.all([
+    ctx.supabase
+      .from('time_entries')
+      .select('hours, type, date')
+      .eq('user_id', ctx.user.id)
+      .eq('organization_id', ctx.organizationId)
+      .gte('date', startDate)
+      .lte('date', endDate),
+    ctx.supabase
+      .from('user_config')
+      .select('*')
+      .eq('user_id', ctx.user.id)
+      .single(),
+  ])
+
+  const config = configResult.data || { hours_per_day: 8, hourly_rate: 50, overtime_multiplier: 1.5, currency: 'PLN' }
+  const entries = entriesResult.data || []
+  const workingDays = countWorkingDays(year, monthNum - 1)
+
+  const workEntries = entries.filter(e => e.type === 'work')
+  const vacationEntries = entries.filter(e => e.type === 'vacation')
+
+  const workHours = workEntries.reduce((sum, e) => sum + (e.hours || 0), 0)
+  const vacationDays = vacationEntries.length
+  const effectiveWorkingDays = Math.max(0, workingDays - vacationDays)
+  const expectedHours = effectiveWorkingDays * config.hours_per_day
+  const overtimeHours = Math.max(0, workHours - expectedHours)
+  const undertimeHours = Math.max(0, expectedHours - workHours)
+  const overtimePay = overtimeHours * config.hourly_rate * config.overtime_multiplier
+  const regularPay = Math.min(workHours, expectedHours) * config.hourly_rate
+
+  return {
+    workingDays,
+    vacationDays,
+    effectiveWorkingDays,
+    expectedHours,
+    workHours,
+    overtimeHours,
+    undertimeHours,
+    overtimePay,
+    regularPay,
+    totalPay: regularPay + overtimePay,
+    currency: config.currency,
+    hoursPerDay: config.hours_per_day,
+  }
+}
+
 export async function createTimeEntry(formData: FormData): Promise<{ error?: string; success?: boolean }> {
   const ctx = await getWorkerContext()
   if (!ctx) return { error: 'Unauthorized' }
 
   const date = formData.get('date') as string
-  const hours = parseFloat(formData.get('hours') as string)
   const type = (formData.get('type') as string) || 'work'
   const description = formData.get('description') as string
 
-  if (isNaN(hours) || hours <= 0 || hours > 24) return { error: 'Hours must be between 0 and 24' }
+  let hours: number
 
-  // Check if entry exists
+  if (type === 'vacation') {
+    // For vacation, get hours_per_day from config
+    const { data: config } = await ctx.supabase
+      .from('user_config')
+      .select('hours_per_day')
+      .eq('user_id', ctx.user.id)
+      .single()
+    hours = config?.hours_per_day || 8
+  } else {
+    hours = parseFloat(formData.get('hours') as string)
+    if (isNaN(hours) || hours <= 0 || hours > 24) return { error: 'Hours must be between 0 and 24' }
+  }
+
+  // Check if entry exists for this date
   const { data: existing } = await ctx.supabase
     .from('time_entries')
     .select('id')
@@ -96,7 +240,14 @@ export async function createTimeEntry(formData: FormData): Promise<{ error?: str
   if (existing) {
     const { error } = await ctx.supabase
       .from('time_entries')
-      .update({ hours, type, description: description || null, updated_at: new Date().toISOString() })
+      .update({
+        hours,
+        type,
+        description: description || null,
+        start_time: type === 'vacation' ? null : undefined,
+        end_time: type === 'vacation' ? null : undefined,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', existing.id)
 
     if (error) return { error: error.message }
@@ -109,6 +260,8 @@ export async function createTimeEntry(formData: FormData): Promise<{ error?: str
         date,
         hours,
         type,
+        start_time: null,
+        end_time: null,
         description: description || null,
       })
 

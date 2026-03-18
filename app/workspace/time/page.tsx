@@ -1,19 +1,22 @@
-import { getMyTimeEntries } from '@/lib/actions/worker'
+import { getMyTimeEntries, getMonthlySummary } from '@/lib/actions/worker'
 import { TimeTrackingCalendar } from '@/components/workspace/time-tracking-calendar'
 
 export default async function TimeTrackingPage() {
-  const entries = await getMyTimeEntries()
+  const [entries, summary] = await Promise.all([
+    getMyTimeEntries(),
+    getMonthlySummary(),
+  ])
 
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Time Tracking</h1>
+        <h1 className="text-3xl font-bold">Czas pracy</h1>
         <p className="text-muted-foreground mt-1">
-          Log your work hours and track your time
+          Rejestruj godziny pracy i urlopy
         </p>
       </div>
 
-      <TimeTrackingCalendar initialEntries={entries} />
+      <TimeTrackingCalendar initialEntries={entries} summary={summary} />
     </div>
   )
 }
