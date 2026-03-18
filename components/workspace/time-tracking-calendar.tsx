@@ -123,6 +123,15 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
     setError(null)
   }
 
+  async function refreshMonthData() {
+    const [newEntries, newSummary] = await Promise.all([
+      getMyTimeEntries(yearMonth),
+      getMonthlySummary(yearMonth),
+    ])
+    setEntries(newEntries)
+    setSummary(newSummary)
+  }
+
   async function handleSubmit(formData: FormData) {
     if (!selectedDate) return
     setLoading(true)
@@ -141,32 +150,8 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
       setError(result.error)
       setLoading(false)
     } else {
-      const hours = entryType === 'vacation'
-        ? (initialSummary?.hoursPerDay || 8)
-        : (result.hours ?? calculatedHours ?? 8)
-      const description = formData.get('description') as string
-
-      setEntries(prev => {
-        const existing = prev.find(e => e.date === selectedDate)
-        const updated = {
-          id: existing?.id || Date.now().toString(),
-          user_id: '',
-          organization_id: '',
-          date: selectedDate,
-          hours,
-          type: entryType,
-          start_time: entryType === 'work' ? startTime : null,
-          end_time: entryType === 'work' ? endTime : null,
-          description,
-          created_at: existing?.created_at || new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-        if (existing) {
-          return prev.map(e => e.date === selectedDate ? updated : e)
-        }
-        return [...prev, updated]
-      })
-
+      // Re-fetch from server so we always have real UUIDs and correct summary
+      await refreshMonthData()
       setDialogOpen(false)
       setLoading(false)
     }
@@ -177,16 +162,28 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
     const entry = getEntryForDate(selectedDate)
     if (!entry) return
 
+    // Guard: entry.id must look like a UUID, not a temp value
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidPattern.test(entry.id)) {
+      // Entry was added optimistically without a real ID — refresh to get real IDs first
+      await refreshMonthData()
+      setError('Odśwież stronę i spróbuj ponownie.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     const result = await deleteTimeEntry(entry.id)
 
     if (result?.error) {
       setError(result.error)
+      setLoading(false)
     } else {
-      setEntries(prev => prev.filter(e => e.id !== entry.id))
+      // Re-fetch so summary cards reflect the deletion immediately
+      await refreshMonthData()
       setDialogOpen(false)
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const selectedEntry = selectedDate ? getEntryForDate(selectedDate) : null
