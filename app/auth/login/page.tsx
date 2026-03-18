@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { login } from '@/lib/actions/auth'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,25 +11,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     setError(null)
     
-    console.log('[v0] Submitting login form')
     const result = await login(formData)
-    console.log('[v0] Login result:', result)
     
     if (result?.error) {
       setError(result.error)
       setLoading(false)
     } else if (result?.redirectTo) {
-      console.log('[v0] Redirecting to:', result.redirectTo)
-      router.refresh()
-      router.push(result.redirectTo)
+      // Use window.location for full page navigation after auth
+      // This ensures cookies are properly picked up
+      window.location.href = result.redirectTo
     } else {
-      console.log('[v0] No redirect or error returned')
       setLoading(false)
     }
   }
