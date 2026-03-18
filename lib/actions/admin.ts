@@ -208,14 +208,17 @@ export async function getOrgTimeEntries(startDate?: string, endDate?: string) {
   const ctx = await getAdminContext()
   if (!ctx) return []
 
+  const now = new Date()
+  const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const defaultEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
   let query = ctx.supabase
     .from('time_entries')
     .select('*, profile:profiles(full_name, email)')
     .eq('organization_id', ctx.organizationId)
+    .gte('date', startDate || defaultStart)
+    .lte('date', endDate || defaultEnd)
     .order('date', { ascending: false })
-
-  if (startDate) query = query.gte('date', startDate)
-  if (endDate) query = query.lte('date', endDate)
 
   const { data } = await query
   return data || []
