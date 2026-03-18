@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { login } from '@/lib/actions/auth'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -21,6 +23,8 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error)
       setLoading(false)
+    } else if (result?.redirectTo) {
+      router.push(result.redirectTo)
     }
   }
 

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<{ error?: string; redirectTo?: string }> {
   const supabase = await createClient()
 
   const email = formData.get('email') as string
@@ -34,7 +34,7 @@ export async function login(formData: FormData) {
   revalidatePath('/', 'layout')
 
   if (profile?.is_super_admin) {
-    redirect('/super-admin')
+    return { redirectTo: '/super-admin' }
   }
 
   // Check if user has any memberships
@@ -47,14 +47,14 @@ export async function login(formData: FormData) {
   if (memberships && memberships.length > 0) {
     const membership = memberships[0]
     if (membership.role === 'admin') {
-      redirect('/admin')
+      return { redirectTo: '/admin' }
     } else {
-      redirect('/workspace')
+      return { redirectTo: '/workspace' }
     }
   }
 
   // No memberships - redirect to workspace (they'll see onboarding)
-  redirect('/workspace')
+  return { redirectTo: '/workspace' }
 }
 
 export async function signUp(formData: FormData) {
