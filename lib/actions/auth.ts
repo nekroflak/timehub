@@ -10,39 +10,29 @@ export async function login(formData: FormData): Promise<{ error?: string; redir
   const email = formData.get('email') as string
   const password = formData.get('password') as string
 
-  console.log('[v0] Login attempt for:', email)
-
-  const { error, data: signInData } = await supabase.auth.signInWithPassword({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
-
-  console.log('[v0] Sign in result:', { error: error?.message, user: signInData?.user?.id })
 
   if (error) {
     return { error: error.message }
   }
 
-  // Get user profile to determine redirect
   const { data: { user } } = await supabase.auth.getUser()
-  console.log('[v0] getUser result:', user?.id)
-  
   if (!user) {
     return { error: 'Authentication failed' }
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('is_super_admin')
     .eq('id', user.id)
     .single()
 
-  console.log('[v0] Profile query result:', { profile, error: profileError?.message })
-
   revalidatePath('/', 'layout')
 
   if (profile?.is_super_admin) {
-    console.log('[v0] Redirecting to /super-admin')
     return { redirectTo: '/super-admin' }
   }
 
