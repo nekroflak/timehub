@@ -18,13 +18,20 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     
+    console.log('[v0] Submitting login form')
     const result = await login(formData)
+    console.log('[v0] Login result:', result)
     
     if (result?.error) {
       setError(result.error)
       setLoading(false)
     } else if (result?.redirectTo) {
+      console.log('[v0] Redirecting to:', result.redirectTo)
+      router.refresh()
       router.push(result.redirectTo)
+    } else {
+      console.log('[v0] No redirect or error returned')
+      setLoading(false)
     }
   }
 
