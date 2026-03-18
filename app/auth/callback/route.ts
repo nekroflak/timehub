@@ -1,48 +1,55 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { resolvePendingInvitations } from '@/lib/actions/auth'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+
     if (!error) {
-      // Get user to determine redirect
       const { data: { user } } = await supabase.auth.getUser()
+
       if (user) {
+        // Ensure profile exists
+        await supabase
+          .from('profiles')
+          .upsert({
+            id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name || null,
+            platform_role: user.email === 'kamilurbanmail@gmail.com' ? 'super_admin' : 'user',
+          }, { onConflict: 'id' })
+
+        // Resolve pending invitations
+        await resolvePendingInvitations(user.id, user.email!)
+
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_super_admin')
+          .select('platform_role')
           .eq('id', user.id)
           .single()
 
-        if (profile?.is_super_admin) {
+        if (profile?.platform_role === 'super_admin') {
           return NextResponse.redirect(`${origin}/super-admin`)
         }
 
-        const { data: memberships } = await supabase
-          .from('memberships')
+        const { data: membership } = await supabase
+          .from('organization_members')
           .select('role')
           .eq('user_id', user.id)
-          .limit(1)
+          .single()
 
-        if (memberships && memberships.length > 0) {
-          const role = memberships[0].role
-          if (role === 'admin') {
-            return NextResponse.redirect(`${origin}/admin`)
-          }
-          return NextResponse.redirect(`${origin}/workspace`)
-        }
+        if (membership?.role === 'admin') return NextResponse.redirect(`${origin}/admin`)
+        if (membership?.role === 'worker') return NextResponse.redirect(`${origin}/workspace`)
+
+        return NextResponse.redirect(`${origin}/no-org`)
       }
-      
-      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  // Return the user to an error page with instructions
   return NextResponse.redirect(`${origin}/auth/error`)
 }

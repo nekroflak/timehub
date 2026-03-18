@@ -24,30 +24,24 @@ interface InvitationsListProps {
 }
 
 export function InvitationsList({ invitations }: InvitationsListProps) {
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [revokingId, setRevokingId] = useState<string | null>(null)
 
   async function handleRevoke(id: string) {
-    setDeletingId(id)
+    setRevokingId(id)
     await revokeInvitation(id)
-    setDeletingId(null)
+    setRevokingId(null)
   }
 
-  function getStatus(invitation: Invitation) {
-    if (invitation.accepted_at) {
-      return { label: 'Accepted', variant: 'default' as const, icon: CheckCircle2 }
-    }
-    if (new Date(invitation.expires_at) < new Date()) {
-      return { label: 'Expired', variant: 'secondary' as const, icon: XCircle }
-    }
-    return { label: 'Pending', variant: 'outline' as const, icon: Clock }
-  }
-
-  function getRoleLabel(role: string) {
-    switch (role) {
-      case 'super_admin': return 'Super Admin'
-      case 'admin': return 'Admin'
-      case 'worker': return 'Worker'
-      default: return role
+  function getStatusDisplay(invitation: Invitation) {
+    switch (invitation.status) {
+      case 'accepted':
+        return { label: 'Accepted', variant: 'default' as const, Icon: CheckCircle2 }
+      case 'expired':
+        return { label: 'Expired', variant: 'secondary' as const, Icon: XCircle }
+      case 'cancelled':
+        return { label: 'Cancelled', variant: 'destructive' as const, Icon: XCircle }
+      default:
+        return { label: 'Pending', variant: 'outline' as const, Icon: Clock }
     }
   }
 
@@ -58,7 +52,7 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
           <Mail className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-semibold">No invitations yet</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Send your first invitation to get started
+            Invitations appear here when you create an organization
           </p>
         </CardContent>
       </Card>
@@ -68,9 +62,9 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
   return (
     <div className="grid gap-4">
       {invitations.map((invitation) => {
-        const status = getStatus(invitation)
-        const StatusIcon = status.icon
-        
+        const { label, variant, Icon } = getStatusDisplay(invitation)
+        const canRevoke = invitation.status === 'pending'
+
         return (
           <Card key={invitation.id}>
             <CardContent className="flex items-center justify-between p-6">
@@ -81,18 +75,23 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
                 <div>
                   <h3 className="font-semibold">{invitation.email}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {invitation.organization?.name || 'Platform-level'} - {getRoleLabel(invitation.role)}
+                    {invitation.organization?.name || 'Unknown org'} &mdash; {invitation.role}
                   </p>
+                  {invitation.expires_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Expires {new Date(invitation.expires_at).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4">
-                <Badge variant={status.variant} className="gap-1">
-                  <StatusIcon className="h-3 w-3" />
-                  {status.label}
+                <Badge variant={variant} className="gap-1">
+                  <Icon className="h-3 w-3" />
+                  {label}
                 </Badge>
-                
-                {!invitation.accepted_at && (
+
+                {canRevoke && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -103,18 +102,17 @@ export function InvitationsList({ invitations }: InvitationsListProps) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Revoke invitation?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will revoke the invitation sent to {invitation.email}. They will no longer
-                          be able to use the invite link to create an account.
+                          The invite link sent to {invitation.email} will no longer work.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleRevoke(invitation.id)}
-                          disabled={deletingId === invitation.id}
+                          disabled={revokingId === invitation.id}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          {deletingId === invitation.id ? 'Revoking...' : 'Revoke'}
+                          {revokingId === invitation.id ? 'Revoking...' : 'Revoke'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
