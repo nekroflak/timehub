@@ -35,12 +35,12 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hours This Week
+              Hours This Month
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">{stats.hoursThisWeek.toFixed(1)}</div>
+            <div className="text-3xl font-bold">{stats.hoursThisMonth.toFixed(1)}</div>
           </CardContent>
         </Card>
 

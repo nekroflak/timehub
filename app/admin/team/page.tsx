@@ -25,7 +25,7 @@ export default async function TeamPage() {
       <Tabs defaultValue="members">
         <TabsList>
           <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
-          <TabsTrigger value="invitations">Pending ({invitations.filter(i => !i.accepted_at).length})</TabsTrigger>
+          <TabsTrigger value="invitations">Pending ({invitations.filter(i => i.status === 'pending').length})</TabsTrigger>
         </TabsList>
         <TabsContent value="members" className="mt-6">
           <TeamMembersList members={members} />

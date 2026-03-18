@@ -1,6 +1,6 @@
 import { getWorkerStats } from '@/lib/actions/worker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Clock, Calendar, FileText } from 'lucide-react'
+import { Calendar, FileText } from 'lucide-react'
 import { redirect } from 'next/navigation'
 
 export default async function WorkspaceDashboard() {
@@ -20,18 +20,6 @@ export default async function WorkspaceDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hours This Week
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.hoursThisWeek.toFixed(1)}</div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">

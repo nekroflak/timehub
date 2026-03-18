@@ -33,8 +33,7 @@ function SignUpForm() {
         .from('invitations')
         .select('*, organization:organizations(*)')
         .eq('token', token)
-        .is('accepted_at', null)
-        .gt('expires_at', new Date().toISOString())
+        .eq('status', 'pending')
         .single()
 
       if (fetchError || !data) {
@@ -91,11 +90,7 @@ function SignUpForm() {
     )
   }
 
-  const roleDisplay = invitation?.role === 'super_admin' 
-    ? 'Platform Administrator' 
-    : invitation?.role === 'admin' 
-    ? 'Company Administrator' 
-    : 'Team Member'
+  const roleDisplay = invitation?.role === 'admin' ? 'Company Administrator' : 'Team Member'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">

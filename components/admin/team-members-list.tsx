@@ -23,10 +23,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Users, Trash2, MoreVertical, Shield, User } from 'lucide-react'
-import type { Membership, Profile } from '@/lib/types'
+import type { OrgMember, Profile } from '@/lib/types'
 
 interface TeamMembersListProps {
-  members: (Membership & { profile: Profile | null })[]
+  members: (OrgMember & { profile: Profile | null })[]
 }
 
 export function TeamMembersList({ members }: TeamMembersListProps) {

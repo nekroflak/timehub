@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { deleteOrganization } from '@/lib/actions/super-admin'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,7 @@ import { Building2, Trash2, Users } from 'lucide-react'
 import type { Organization } from '@/lib/types'
 
 interface OrganizationsListProps {
-  organizations: (Organization & { memberships: { count: number }[] })[]
+  organizations: (Organization & { members: { count: number }[] })[]
 }
 
 export function OrganizationsList({ organizations }: OrganizationsListProps) {
@@ -45,11 +46,23 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
     )
   }
 
+  const planVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
+    enterprise: 'default',
+    pro: 'secondary',
+    free: 'outline',
+  }
+
+  const statusVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    active: 'default',
+    trial: 'secondary',
+    blocked: 'destructive',
+  }
+
   return (
     <div className="grid gap-4">
       {organizations.map((org) => {
-        const memberCount = org.memberships?.[0]?.count || 0
-        
+        const memberCount = org.members?.[0]?.count || 0
+
         return (
           <Card key={org.id}>
             <CardContent className="flex items-center justify-between p-6">
@@ -58,17 +71,23 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
                   <Building2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{org.name}</h3>
-                  <p className="text-sm text-muted-foreground">/{org.slug}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">{org.name}</h3>
+                    <Badge variant={planVariant[org.plan] ?? 'outline'}>{org.plan}</Badge>
+                    <Badge variant={statusVariant[org.status] ?? 'outline'}>{org.status}</Badge>
+                  </div>
+                  {org.slug && (
+                    <p className="text-sm text-muted-foreground">/{org.slug}</p>
+                  )}
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4" />
                   <span className="text-sm">{memberCount} members</span>
                 </div>
-                
+
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -79,8 +98,7 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete organization?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete {org.name} and all associated data including
-                        memberships, time entries, and invitations. This action cannot be undone.
+                        This will permanently delete {org.name} and all associated data. This cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

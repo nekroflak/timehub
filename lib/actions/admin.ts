@@ -10,12 +10,12 @@ function generateToken(): string {
 
 async function getAdminContext() {
   const supabase = await createClient()
-  
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
   const { data: membership } = await supabase
-    .from('memberships')
+    .from('organization_members')
     .select('*, organization:organizations(*)')
     .eq('user_id', user.id)
     .eq('role', 'admin')
@@ -23,10 +23,40 @@ async function getAdminContext() {
 
   if (!membership) return null
 
+  return { supabase, user, membership, organizationId: membership.organization_id }
+}
+
+export async function getAdminStats() {
+  const ctx = await getAdminContext()
+  if (!ctx) return null
+
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+
+  const [membersResult, hoursResult, pendingInvitesResult] = await Promise.all([
+    ctx.supabase
+      .from('organization_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId),
+    ctx.supabase
+      .from('time_entries')
+      .select('hours')
+      .eq('organization_id', ctx.organizationId)
+      .gte('date', startOfMonth),
+    ctx.supabase
+      .from('invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'pending'),
+  ])
+
+  const totalHours = hoursResult.data?.reduce((sum, e) => sum + (e.hours || 0), 0) || 0
+
   return {
-    user,
-    membership,
-    organizationId: membership.organization_id,
+    totalMembers: membersResult.count || 0,
+    hoursThisMonth: totalHours,
+    pendingInvitations: pendingInvitesResult.count || 0,
+    organizationName: (ctx.membership.organization as any)?.name || 'Organization',
   }
 }
 
@@ -34,10 +64,8 @@ export async function getTeamMembers() {
   const ctx = await getAdminContext()
   if (!ctx) return []
 
-  const supabase = await createClient()
-  
-  const { data } = await supabase
-    .from('memberships')
+  const { data } = await ctx.supabase
+    .from('organization_members')
     .select('*, profile:profiles(*)')
     .eq('organization_id', ctx.organizationId)
     .order('created_at', { ascending: true })
@@ -45,125 +73,105 @@ export async function getTeamMembers() {
   return data || []
 }
 
-export async function inviteTeamMember(formData: FormData) {
+export async function inviteTeamMember(formData: FormData): Promise<{ error?: string; success?: boolean; inviteLink?: string }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  const supabase = await createClient()
-  
   const email = formData.get('email') as string
   const role = formData.get('role') as 'admin' | 'worker'
 
-  // Check if user already exists in org
-  const { data: existingProfile } = await supabase
+  if (!email?.trim()) return { error: 'Email is required' }
+
+  // Check if already a member
+  const { data: existingProfile } = await ctx.supabase
     .from('profiles')
     .select('id')
-    .eq('email', email)
+    .eq('email', email.toLowerCase())
     .single()
 
   if (existingProfile) {
-    const { data: existingMembership } = await supabase
-      .from('memberships')
+    const { data: existingMember } = await ctx.supabase
+      .from('organization_members')
       .select('id')
       .eq('user_id', existingProfile.id)
       .eq('organization_id', ctx.organizationId)
       .single()
 
-    if (existingMembership) {
-      return { error: 'User is already a member of this organization' }
-    }
+    if (existingMember) return { error: 'User is already a member of this organization' }
   }
 
-  // Check for pending invitation
-  const { data: existingInvite } = await supabase
+  // Check for pending invite
+  const { data: existingInvite } = await ctx.supabase
     .from('invitations')
     .select('id')
-    .eq('email', email)
+    .eq('email', email.toLowerCase())
     .eq('organization_id', ctx.organizationId)
-    .is('accepted_at', null)
-    .gt('expires_at', new Date().toISOString())
+    .eq('status', 'pending')
     .single()
 
-  if (existingInvite) {
-    return { error: 'A pending invitation already exists for this email' }
-  }
+  if (existingInvite) return { error: 'A pending invitation already exists for this email' }
 
   const token = generateToken()
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + 7)
 
-  const { error } = await supabase
+  const { error } = await ctx.supabase
     .from('invitations')
     .insert({
-      email,
+      email: email.toLowerCase(),
       role,
       organization_id: ctx.organizationId,
-      token,
-      expires_at: expiresAt.toISOString(),
       invited_by: ctx.user.id,
+      token,
+      status: 'pending',
+      expires_at: expiresAt.toISOString(),
     })
 
-  if (error) {
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath('/admin/team', 'page')
-  
+  revalidatePath('/admin/team')
+
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return { 
-    success: true, 
-    inviteLink: `${baseUrl}/auth/sign-up?token=${token}` 
-  }
+  return { success: true, inviteLink: `${baseUrl}/auth/sign-up?token=${token}` }
 }
 
-export async function removeMember(memberId: string) {
+export async function removeMember(memberId: string): Promise<{ error?: string; success?: boolean }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  const supabase = await createClient()
-
-  // Don't allow removing yourself
-  const { data: targetMembership } = await supabase
-    .from('memberships')
+  const { data: target } = await ctx.supabase
+    .from('organization_members')
     .select('user_id')
     .eq('id', memberId)
     .single()
 
-  if (targetMembership?.user_id === ctx.user.id) {
-    return { error: 'You cannot remove yourself from the organization' }
-  }
+  if (target?.user_id === ctx.user.id) return { error: 'You cannot remove yourself' }
 
-  const { error } = await supabase
-    .from('memberships')
+  const { error } = await ctx.supabase
+    .from('organization_members')
     .delete()
     .eq('id', memberId)
     .eq('organization_id', ctx.organizationId)
 
-  if (error) {
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath('/admin/team', 'page')
+  revalidatePath('/admin/team')
   return { success: true }
 }
 
-export async function updateMemberRole(memberId: string, newRole: 'admin' | 'worker') {
+export async function updateMemberRole(memberId: string, newRole: OrgRole): Promise<{ error?: string; success?: boolean }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  const supabase = await createClient()
-
-  const { error } = await supabase
-    .from('memberships')
+  const { error } = await ctx.supabase
+    .from('organization_members')
     .update({ role: newRole })
     .eq('id', memberId)
     .eq('organization_id', ctx.organizationId)
 
-  if (error) {
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath('/admin/team', 'page')
+  revalidatePath('/admin/team')
   return { success: true }
 }
 
@@ -171,9 +179,7 @@ export async function getOrgInvitations() {
   const ctx = await getAdminContext()
   if (!ctx) return []
 
-  const supabase = await createClient()
-  
-  const { data } = await supabase
+  const { data } = await ctx.supabase
     .from('invitations')
     .select('*')
     .eq('organization_id', ctx.organizationId)
@@ -182,23 +188,19 @@ export async function getOrgInvitations() {
   return data || []
 }
 
-export async function revokeOrgInvitation(invitationId: string) {
+export async function revokeOrgInvitation(invitationId: string): Promise<{ error?: string; success?: boolean }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  const supabase = await createClient()
-
-  const { error } = await supabase
+  const { error } = await ctx.supabase
     .from('invitations')
-    .delete()
+    .update({ status: 'cancelled' })
     .eq('id', invitationId)
     .eq('organization_id', ctx.organizationId)
 
-  if (error) {
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
-  revalidatePath('/admin/team', 'page')
+  revalidatePath('/admin/team')
   return { success: true }
 }
 
@@ -206,61 +208,17 @@ export async function getOrgTimeEntries(startDate?: string, endDate?: string) {
   const ctx = await getAdminContext()
   if (!ctx) return []
 
-  const supabase = await createClient()
-  
-  let query = supabase
+  let query = ctx.supabase
     .from('time_entries')
     .select('*, profile:profiles(full_name, email)')
     .eq('organization_id', ctx.organizationId)
     .order('date', { ascending: false })
 
-  if (startDate) {
-    query = query.gte('date', startDate)
-  }
-  if (endDate) {
-    query = query.lte('date', endDate)
-  }
+  if (startDate) query = query.gte('date', startDate)
+  if (endDate) query = query.lte('date', endDate)
 
   const { data } = await query
-
   return data || []
 }
 
-export async function getAdminStats() {
-  const ctx = await getAdminContext()
-  if (!ctx) return null
-
-  const supabase = await createClient()
-
-  const now = new Date()
-  const startOfWeek = new Date(now)
-  startOfWeek.setDate(now.getDate() - now.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
-
-  const [membersResult, hoursResult, pendingInvitesResult] = await Promise.all([
-    supabase
-      .from('memberships')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', ctx.organizationId),
-    supabase
-      .from('time_entries')
-      .select('hours')
-      .eq('organization_id', ctx.organizationId)
-      .gte('date', startOfWeek.toISOString().split('T')[0]),
-    supabase
-      .from('invitations')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', ctx.organizationId)
-      .is('accepted_at', null)
-      .gt('expires_at', new Date().toISOString()),
-  ])
-
-  const totalHours = hoursResult.data?.reduce((sum, entry) => sum + (entry.hours || 0), 0) || 0
-
-  return {
-    totalMembers: membersResult.count || 0,
-    hoursThisWeek: totalHours,
-    pendingInvitations: pendingInvitesResult.count || 0,
-    organizationName: ctx.membership.organization?.name || 'Organization',
-  }
-}
+type OrgRole = 'admin' | 'worker'

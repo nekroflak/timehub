@@ -34,20 +34,17 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
   const [error, setError] = useState<string | null>(null)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const [role, setRole] = useState<string>('admin')
-  const [organizationId, setOrganizationId] = useState<string>('')
+  const [role, setRole] = useState('admin')
+  const [organizationId, setOrganizationId] = useState('')
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
     setError(null)
-    
     formData.append('role', role)
-    if (organizationId && role !== 'super_admin') {
-      formData.append('organizationId', organizationId)
-    }
-    
+    formData.append('organizationId', organizationId)
+
     const result = await createInvitation(formData)
-    
+
     if (result?.error) {
       setError(result.error)
       setLoading(false)
@@ -74,10 +71,7 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => {
-      if (!isOpen) handleClose()
-      else setOpen(true)
-    }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); else setOpen(true) }}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
@@ -86,21 +80,18 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {inviteLink ? 'Invitation Created' : 'Create Invitation'}
-          </DialogTitle>
+          <DialogTitle>{inviteLink ? 'Invitation Created' : 'Create Invitation'}</DialogTitle>
           <DialogDescription>
-            {inviteLink 
-              ? 'Share this link with the invitee. It will expire in 7 days.'
-              : 'Send an invitation to join the platform.'
-            }
+            {inviteLink
+              ? 'Share this link. It expires in 7 days.'
+              : 'Invite someone to join an organization.'}
           </DialogDescription>
         </DialogHeader>
 
         {inviteLink ? (
           <div className="flex flex-col gap-4 py-4">
             <div className="flex gap-2">
-              <Input value={inviteLink} readOnly className="font-mono text-sm" />
+              <Input value={inviteLink} readOnly className="font-mono text-xs" />
               <Button variant="outline" size="icon" onClick={handleCopy}>
                 {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               </Button>
@@ -117,63 +108,49 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
                   {error}
                 </div>
               )}
-              
+
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="user@example.com"
-                  required
-                />
+                <Input id="email" name="email" type="email" placeholder="user@example.com" required />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="role">Role</Label>
+                <Label>Role</Label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="super_admin">Super Admin (Platform-level)</SelectItem>
-                    <SelectItem value="admin">Admin (Organization-level)</SelectItem>
-                    <SelectItem value="worker">Worker (Organization-level)</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="worker">Worker</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {role !== 'super_admin' && (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="organization">Organization</Label>
-                  <Select value={organizationId} onValueChange={setOrganizationId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an organization" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {organizations.map((org) => (
-                        <SelectItem key={org.id} value={org.id}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {organizations.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Create an organization first before inviting org-level users.
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-col gap-2">
+                <Label>Organization</Label>
+                <Select value={organizationId} onValueChange={setOrganizationId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {organizations.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No organizations yet. Create one first.
+                  </p>
+                )}
+              </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={loading || (role !== 'super_admin' && !organizationId)}
-              >
+              <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button type="submit" disabled={loading || !organizationId}>
                 {loading ? 'Creating...' : 'Create Invitation'}
               </Button>
             </DialogFooter>

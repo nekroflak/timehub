@@ -33,16 +33,16 @@ export function OrgInvitationsList({ invitations }: OrgInvitationsListProps) {
   }
 
   function getStatus(invitation: Invitation) {
-    if (invitation.accepted_at) {
+    if (invitation.status === 'accepted') {
       return { label: 'Accepted', variant: 'default' as const, icon: CheckCircle2 }
     }
-    if (new Date(invitation.expires_at) < new Date()) {
-      return { label: 'Expired', variant: 'secondary' as const, icon: XCircle }
+    if (invitation.status === 'expired' || invitation.status === 'cancelled') {
+      return { label: invitation.status === 'expired' ? 'Expired' : 'Cancelled', variant: 'secondary' as const, icon: XCircle }
     }
     return { label: 'Pending', variant: 'outline' as const, icon: Clock }
   }
 
-  const pendingInvitations = invitations.filter(i => !i.accepted_at)
+  const pendingInvitations = invitations.filter(i => i.status === 'pending')
 
   if (pendingInvitations.length === 0) {
     return (
