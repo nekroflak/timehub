@@ -1,0 +1,130 @@
+'use client'
+
+import { useState } from 'react'
+import { revokeInvitation } from '@/lib/actions/super-admin'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { Mail, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import type { Invitation } from '@/lib/types'
+
+interface InvitationsListProps {
+  invitations: (Invitation & { organization: { name: string } | null })[]
+}
+
+export function InvitationsList({ invitations }: InvitationsListProps) {
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function handleRevoke(id: string) {
+    setDeletingId(id)
+    await revokeInvitation(id)
+    setDeletingId(null)
+  }
+
+  function getStatus(invitation: Invitation) {
+    if (invitation.accepted_at) {
+      return { label: 'Accepted', variant: 'default' as const, icon: CheckCircle2 }
+    }
+    if (new Date(invitation.expires_at) < new Date()) {
+      return { label: 'Expired', variant: 'secondary' as const, icon: XCircle }
+    }
+    return { label: 'Pending', variant: 'outline' as const, icon: Clock }
+  }
+
+  function getRoleLabel(role: string) {
+    switch (role) {
+      case 'super_admin': return 'Super Admin'
+      case 'admin': return 'Admin'
+      case 'worker': return 'Worker'
+      default: return role
+    }
+  }
+
+  if (invitations.length === 0) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center py-12">
+          <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold">No invitations yet</h3>
+          <p className="text-muted-foreground text-sm mt-1">
+            Send your first invitation to get started
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="grid gap-4">
+      {invitations.map((invitation) => {
+        const status = getStatus(invitation)
+        const StatusIcon = status.icon
+        
+        return (
+          <Card key={invitation.id}>
+            <CardContent className="flex items-center justify-between p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Mail className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">{invitation.email}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {invitation.organization?.name || 'Platform-level'} - {getRoleLabel(invitation.role)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <Badge variant={status.variant} className="gap-1">
+                  <StatusIcon className="h-3 w-3" />
+                  {status.label}
+                </Badge>
+                
+                {!invitation.accepted_at && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Revoke invitation?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will revoke the invitation sent to {invitation.email}. They will no longer
+                          be able to use the invite link to create an account.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleRevoke(invitation.id)}
+                          disabled={deletingId === invitation.id}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deletingId === invitation.id ? 'Revoking...' : 'Revoke'}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
