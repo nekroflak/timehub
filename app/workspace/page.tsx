@@ -13,9 +13,9 @@ export default async function WorkspaceDashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Welcome back</h1>
+        <h1 className="text-3xl font-bold">Witaj ponownie</h1>
         <p className="text-muted-foreground mt-1">
-          Here&apos;s your workspace at {stats.organizationName}
+          Twoje miejsce pracy w {stats.organizationName}
         </p>
       </div>
 
@@ -23,7 +23,7 @@ export default async function WorkspaceDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hours This Month
+              Godziny w tym miesiącu
             </CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -35,7 +35,7 @@ export default async function WorkspaceDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Personal Notes
+              Notatki osobiste
             </CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>

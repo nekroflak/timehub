@@ -70,18 +70,18 @@ export function CreateOrganizationDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          New Organization
+          Nowa organizacja
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {inviteLink ? 'Organization Created' : 'Create Organization'}
+            {inviteLink ? 'Organizacja utworzona' : 'Utwórz organizację'}
           </DialogTitle>
           <DialogDescription>
             {inviteLink
-              ? 'Share this link with the first company admin. Expires in 7 days.'
-              : 'Create a new organization and invite the first admin.'}
+              ? 'Udostępnij ten link pierwszemu administratorowi firmy. Wygasa po 7 dniach.'
+              : 'Utwórz nową organizację i zaproś pierwszego administratora.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,7 +94,7 @@ export function CreateOrganizationDialog() {
               </Button>
             </div>
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>Gotowe</Button>
             </DialogFooter>
           </div>
         ) : (
@@ -107,26 +107,26 @@ export function CreateOrganizationDialog() {
               )}
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Organization Name *</Label>
-                <Input id="name" name="name" placeholder="Acme Inc." required />
+                <Label htmlFor="name">Nazwa organizacji *</Label>
+                <Input id="name" name="name" placeholder="Acme Sp. z o.o." required />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="slug">Slug (optional)</Label>
-                <Input id="slug" name="slug" placeholder="acme-inc" />
-                <p className="text-xs text-muted-foreground">Auto-generated from name if left empty</p>
+                <Label htmlFor="slug">Slug (opcjonalnie)</Label>
+                <Input id="slug" name="slug" placeholder="acme-sp-zoo" />
+                <p className="text-xs text-muted-foreground">Generowany automatycznie z nazwy, jeśli pozostawiony pusty</p>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="adminEmail">Admin Email *</Label>
+                <Label htmlFor="adminEmail">E-mail administratora *</Label>
                 <Input
                   id="adminEmail"
                   name="adminEmail"
                   type="email"
-                  placeholder="admin@company.com"
+                  placeholder="admin@firma.pl"
                   required
                 />
-                <p className="text-xs text-muted-foreground">An invitation will be sent to this address</p>
+                <p className="text-xs text-muted-foreground">Zaproszenie zostanie wysłane na ten adres</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -137,7 +137,7 @@ export function CreateOrganizationDialog() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="free">Bezpłatny</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
                       <SelectItem value="enterprise">Enterprise</SelectItem>
                     </SelectContent>
@@ -151,9 +151,9 @@ export function CreateOrganizationDialog() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="trial">Trial</SelectItem>
-                      <SelectItem value="blocked">Blocked</SelectItem>
+                      <SelectItem value="active">Aktywna</SelectItem>
+                      <SelectItem value="trial">Próbna</SelectItem>
+                      <SelectItem value="blocked">Zablokowana</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -162,10 +162,10 @@ export function CreateOrganizationDialog() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create & Invite'}
+                {loading ? 'Tworzenie...' : 'Utwórz i zaproś'}
               </Button>
             </DialogFooter>
           </form>

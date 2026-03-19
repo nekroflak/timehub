@@ -23,7 +23,7 @@ function SignUpForm() {
   useEffect(() => {
     async function fetchInvitation() {
       if (!token) {
-        setError('No invitation token provided')
+        setError('Brak tokenu zaproszenia')
         setLoading(false)
         return
       }
@@ -37,7 +37,7 @@ function SignUpForm() {
         .single()
 
       if (fetchError || !data) {
-        setError('Invalid or expired invitation')
+        setError('Zaproszenie jest nieprawidłowe lub wygasło')
       } else {
         setInvitation(data as Invitation)
       }
@@ -63,7 +63,7 @@ function SignUpForm() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Verifying invitation...</div>
+        <div className="text-muted-foreground">Weryfikacja zaproszenia...</div>
       </div>
     )
   }
@@ -73,7 +73,7 @@ function SignUpForm() {
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-semibold">Invalid Invitation</CardTitle>
+            <CardTitle className="text-2xl font-semibold">Nieprawidłowe zaproszenie</CardTitle>
             <CardDescription>
               {error}
             </CardDescription>
@@ -81,7 +81,7 @@ function SignUpForm() {
           <CardContent>
             <Link href="/">
               <Button variant="outline" className="w-full">
-                Return to homepage
+                Wróć na stronę główną
               </Button>
             </Link>
           </CardContent>
@@ -90,16 +90,16 @@ function SignUpForm() {
     )
   }
 
-  const roleDisplay = invitation?.role === 'admin' ? 'Company Administrator' : 'Team Member'
+  const roleDisplay = invitation?.role === 'admin' ? 'Administrator firmy' : 'Pracownik'
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold">Create your account</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Utwórz konto</CardTitle>
           <CardDescription>
-            You&apos;ve been invited to join{' '}
-            {invitation?.organization?.name || 'the platform'} as a {roleDisplay}
+            Zostałeś zaproszony do{' '}
+            {invitation?.organization?.name || 'platformy'} jako {roleDisplay}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,7 +111,7 @@ function SignUpForm() {
             )}
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Adres e-mail</Label>
               <Input
                 id="email"
                 name="email"
@@ -123,24 +123,24 @@ function SignUpForm() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="fullName">Full Name</Label>
+              <Label htmlFor="fullName">Imię i nazwisko</Label>
               <Input
                 id="fullName"
                 name="fullName"
                 type="text"
-                placeholder="John Doe"
+                placeholder="Jan Kowalski"
                 required
                 autoComplete="name"
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Hasło</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
-                placeholder="Create a strong password"
+                placeholder="Utwórz silne hasło"
                 required
                 minLength={8}
                 autoComplete="new-password"
@@ -148,14 +148,14 @@ function SignUpForm() {
             </div>
 
             <Button type="submit" className="w-full mt-2" disabled={submitting}>
-              {submitting ? 'Creating account...' : 'Create account'}
+              {submitting ? 'Tworzenie konta...' : 'Utwórz konto'}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            Masz już konto?{' '}
             <Link href="/auth/login" className="text-foreground underline underline-offset-4 hover:text-primary">
-              Sign in
+              Zaloguj się
             </Link>
           </p>
         </CardContent>
@@ -168,7 +168,7 @@ export default function SignUpPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-muted-foreground">Loading...</div>
+        <div className="text-muted-foreground">Ładowanie...</div>
       </div>
     }>
       <SignUpForm />

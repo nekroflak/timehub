@@ -8,7 +8,9 @@ import {
   ArrowRight,
   CheckCircle2,
   BarChart3,
-  FileText
+  FileText,
+  KanbanSquare,
+  CheckSquare
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -19,22 +21,22 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <Building2 className="h-6 w-6" />
-            <span className="text-xl font-bold">TeamHub</span>
+            <span className="text-xl font-bold">SimplyDesk</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Features
+              Funkcje
             </a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              How it works
+              Jak to działa
             </a>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/auth/login">
-              <Button variant="ghost" size="sm">Log in</Button>
+              <Button variant="ghost" size="sm">Zaloguj się</Button>
             </Link>
             <Link href="/auth/login">
-              <Button size="sm">Get Started</Button>
+              <Button size="sm">Rozpocznij</Button>
             </Link>
           </div>
         </div>
@@ -44,49 +46,51 @@ export default function LandingPage() {
       <section className="py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight md:text-6xl lg:text-7xl text-balance">
-            Workforce management
+            Uporządkuj czas pracy, zadania
             <br />
-            <span className="text-muted-foreground">for modern teams</span>
+            <span className="text-muted-foreground">i akceptacje w jednym miejscu</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground text-pretty">
-            The complete platform for multi-tenant team management. Track time, manage organizations, 
-            and keep your workforce organized with powerful role-based access control.
+            SimplyDesk pomaga małym firmom i zespołom zarządzać czasem pracy, zadaniami i miesięcznymi
+            rozliczeniami bez chaosu, Excela i rozproszonych wiadomości.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/auth/login">
               <Button size="lg" className="gap-2">
-                Start for free
+                Umów demo
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <a href="#features">
               <Button variant="outline" size="lg">
-                Learn more
+                Zobacz, jak to działa
               </Button>
             </a>
           </div>
+          <p className="mt-6 text-sm text-muted-foreground">
+            Dla małych i rozwijających się zespołów, które chcą mieć większą kontrolę nad pracą i rozliczeniami.
+          </p>
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* Value / Benefits Section */}
       <section className="border-y bg-card py-12">
         <div className="mx-auto max-w-6xl px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold">Mniej chaosu, więcej kontroli</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <p className="text-3xl font-bold">99.9%</p>
-              <p className="mt-1 text-sm text-muted-foreground">Uptime guarantee</p>
+              <p className="font-semibold">Jedno miejsce dla zespołu</p>
+              <p className="mt-1 text-sm text-muted-foreground">Czas pracy, zadania, akceptacje i raporty w jednym systemie.</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold">50k+</p>
-              <p className="mt-1 text-sm text-muted-foreground">Hours tracked daily</p>
+              <p className="font-semibold">Przejrzyste role i dostęp</p>
+              <p className="mt-1 text-sm text-muted-foreground">Każdy widzi tylko to, czego potrzebuje — bez mieszania danych między firmami i użytkownikami.</p>
             </div>
             <div className="text-center">
-              <p className="text-3xl font-bold">1000+</p>
-              <p className="mt-1 text-sm text-muted-foreground">Organizations</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl font-bold">30%</p>
-              <p className="mt-1 text-sm text-muted-foreground">Time saved</p>
+              <p className="font-semibold">Gotowe do codziennego użycia</p>
+              <p className="mt-1 text-sm text-muted-foreground">System wspiera realny obieg pracy: wpisy czasu, akceptacje, zadania i raporty.</p>
             </div>
           </div>
         </div>
@@ -96,9 +100,9 @@ export default function LandingPage() {
       <section id="features" className="py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold md:text-4xl">Everything you need</h2>
+            <h2 className="text-3xl font-bold md:text-4xl">Najważniejsze funkcje w jednym systemie</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Powerful features to manage your entire workforce from a single platform.
+              Wszystko, czego potrzebujesz do codziennej pracy zespołu — od ewidencji czasu po zadania i raporty.
             </p>
           </div>
 
@@ -107,39 +111,29 @@ export default function LandingPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
                 <Clock className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Time Tracking</h3>
+              <h3 className="text-lg font-semibold mb-2">Czas pracy i nadgodziny</h3>
               <p className="text-muted-foreground">
-                Intuitive calendar-based time tracking. Workers log hours daily with optional descriptions.
+                Rejestruj czas pracy pracowników, dodawaj urlopy i kontroluj nadgodziny w przejrzystym miesięcznym widoku.
               </p>
             </div>
 
             <div className="p-6 rounded-lg border bg-card">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
-                <Users className="h-6 w-6 text-primary" />
+                <CheckSquare className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Team Management</h3>
+              <h3 className="text-lg font-semibold mb-2">Zatwierdzanie miesięcy pracy</h3>
               <p className="text-muted-foreground">
-                Invite team members, assign roles, and manage permissions with granular control.
+                Pracownik wysyła miesiąc do akceptacji, a administrator firmy zatwierdza lub odrzuca zgłoszenie z komentarzem.
               </p>
             </div>
 
             <div className="p-6 rounded-lg border bg-card">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
-                <Building2 className="h-6 w-6 text-primary" />
+                <KanbanSquare className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Multi-tenant</h3>
+              <h3 className="text-lg font-semibold mb-2">Tablica zadań dla zespołu</h3>
               <p className="text-muted-foreground">
-                Create and manage multiple organizations. Perfect for agencies and enterprise.
-              </p>
-            </div>
-
-            <div className="p-6 rounded-lg border bg-card">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Role-based Access</h3>
-              <p className="text-muted-foreground">
-                Three-tier role system: Super Admin, Company Admin, and Worker with isolated permissions.
+                Twórz zadania, przypisuj je do pracowników i śledź postęp na prostej tablicy z kolumnami: do zrobienia, przypisane i zrobione.
               </p>
             </div>
 
@@ -147,9 +141,9 @@ export default function LandingPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
                 <BarChart3 className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Reports & Analytics</h3>
+              <h3 className="text-lg font-semibold mb-2">Raporty PDF</h3>
               <p className="text-muted-foreground">
-                View time reports by team member, date range, and generate insights for your organization.
+                Generuj raporty czasu pracy dla pracownika, całej firmy lub wybranego członka zespołu w czytelnej formie PDF.
               </p>
             </div>
 
@@ -157,9 +151,19 @@ export default function LandingPage() {
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
                 <FileText className="h-6 w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Personal Notes</h3>
+              <h3 className="text-lg font-semibold mb-2">Notatki i organizacja pracy</h3>
               <p className="text-muted-foreground">
-                Private note-taking for workers. Keep track of tasks, ideas, and personal reminders.
+                Każdy użytkownik ma dostęp do własnych notatek, które pomagają porządkować codzienną pracę i ważne informacje.
+              </p>
+            </div>
+
+            <div className="p-6 rounded-lg border bg-card">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
+                <Shield className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Role i dostęp dla firmy</h3>
+              <p className="text-muted-foreground">
+                Super administrator tworzy firmy, administrator firmy zarządza zespołem, a pracownik widzi tylko swoje dane i zadania.
               </p>
             </div>
           </div>
@@ -170,10 +174,7 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-20 md:py-32 bg-card border-y">
         <div className="mx-auto max-w-6xl px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold md:text-4xl">How it works</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Get your team up and running in minutes with our simple setup process.
-            </p>
+            <h2 className="text-3xl font-bold md:text-4xl">Jak to działa?</h2>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -181,9 +182,9 @@ export default function LandingPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg mb-4">
                 1
               </div>
-              <h3 className="text-lg font-semibold mb-2">Create Organization</h3>
+              <h3 className="text-lg font-semibold mb-2">Tworzysz firmę i zapraszasz zespół</h3>
               <p className="text-muted-foreground">
-                Super admins create organizations and set up the initial structure for each company.
+                Super administrator zakłada firmę, a administrator firmy zaprasza pracowników do organizacji.
               </p>
             </div>
 
@@ -191,9 +192,9 @@ export default function LandingPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg mb-4">
                 2
               </div>
-              <h3 className="text-lg font-semibold mb-2">Invite Your Team</h3>
+              <h3 className="text-lg font-semibold mb-2">Zespół rejestruje pracę i realizuje zadania</h3>
               <p className="text-muted-foreground">
-                Send invitations to company admins and workers. They sign up through secure invite links.
+                Pracownicy dodają czas pracy, korzystają z tablicy zadań i prowadzą swoje notatki.
               </p>
             </div>
 
@@ -201,9 +202,9 @@ export default function LandingPage() {
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-lg mb-4">
                 3
               </div>
-              <h3 className="text-lg font-semibold mb-2">Start Tracking</h3>
+              <h3 className="text-lg font-semibold mb-2">Administrator kontroluje i zatwierdza</h3>
               <p className="text-muted-foreground">
-                Team members log their time, admins view reports, and everyone stays organized.
+                Administrator firmy widzi zespół, raporty i zgłoszenia do akceptacji, a na końcu może pobrać raport PDF.
               </p>
             </div>
           </div>
@@ -214,31 +215,44 @@ export default function LandingPage() {
       <section className="py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-4 text-center">
           <h2 className="text-3xl font-bold md:text-4xl text-balance">
-            Ready to streamline your workforce?
+            Chcesz zobaczyć, jak SimplyDesk sprawdzi się w Twojej firmie?
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Join thousands of organizations already using TeamHub to manage their teams effectively.
+            Pokażemy Ci, jak uporządkować czas pracy, zadania i proces akceptacji w zespole.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/auth/login">
               <Button size="lg" className="gap-2">
-                Get started today
+                Umów demo
                 <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/auth/login">
+              <Button variant="outline" size="lg">
+                Skontaktuj się z nami
               </Button>
             </Link>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              Free to start
+              prosty start
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              No credit card required
+              przejrzysty podział ról
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-primary" />
-              Invite-only signup
+              raporty PDF
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              akceptacje miesięcy pracy
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              zadania dla zespołu
             </div>
           </div>
         </div>
@@ -250,10 +264,10 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              <span className="font-semibold">TeamHub</span>
+              <span className="font-semibold">SimplyDesk</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Built for modern teams. Secure, scalable, and simple.
+              SimplyDesk — czas pracy, zadania i akceptacje dla nowoczesnych zespołów
             </p>
           </div>
         </div>

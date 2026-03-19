@@ -75,16 +75,16 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          New Invitation
+          Nowe zaproszenie
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{inviteLink ? 'Invitation Created' : 'Create Invitation'}</DialogTitle>
+          <DialogTitle>{inviteLink ? 'Zaproszenie utworzone' : 'Utwórz zaproszenie'}</DialogTitle>
           <DialogDescription>
             {inviteLink
-              ? 'Share this link. It expires in 7 days.'
-              : 'Invite someone to join an organization.'}
+              ? 'Udostępnij ten link. Wygasa po 7 dniach.'
+              : 'Zaproś kogoś do dołączenia do organizacji.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -97,7 +97,7 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
               </Button>
             </div>
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>Gotowe</Button>
             </DialogFooter>
           </div>
         ) : (
@@ -110,28 +110,28 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
               )}
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" name="email" type="email" placeholder="user@example.com" required />
+                <Label htmlFor="email">Adres e-mail</Label>
+                <Input id="email" name="email" type="email" placeholder="uzytkownik@example.com" required />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Role</Label>
+                <Label>Rola</Label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="worker">Worker</SelectItem>
+                    <SelectItem value="admin">Administrator</SelectItem>
+                    <SelectItem value="worker">Pracownik</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label>Organization</Label>
+                <Label>Organizacja</Label>
                 <Select value={organizationId} onValueChange={setOrganizationId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select an organization" />
+                    <SelectValue placeholder="Wybierz organizację" />
                   </SelectTrigger>
                   <SelectContent>
                     {organizations.map((org) => (
@@ -143,15 +143,15 @@ export function CreateInvitationDialog({ organizations }: CreateInvitationDialog
                 </Select>
                 {organizations.length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    No organizations yet. Create one first.
+                    Brak organizacji. Najpierw utwórz organizację.
                   </p>
                 )}
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={handleClose}>Anuluj</Button>
               <Button type="submit" disabled={loading || !organizationId}>
-                {loading ? 'Creating...' : 'Create Invitation'}
+                {loading ? 'Tworzenie...' : 'Utwórz zaproszenie'}
               </Button>
             </DialogFooter>
           </form>

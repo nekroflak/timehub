@@ -42,14 +42,14 @@ export function CreateNoteDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          New Note
+          Nowa notatka
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Note</DialogTitle>
+          <DialogTitle>Utwórz notatkę</DialogTitle>
           <DialogDescription>
-            Add a new personal note. Only you can see your notes.
+            Dodaj nową prywatną notatkę. Tylko Ty możesz ją zobaczyć.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit}>
@@ -61,31 +61,31 @@ export function CreateNoteDialog() {
             )}
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">Tytuł</Label>
               <Input
                 id="title"
                 name="title"
-                placeholder="Note title"
+                placeholder="Tytuł notatki"
                 required
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="content">Content</Label>
+              <Label htmlFor="content">Treść</Label>
               <Textarea
                 id="content"
                 name="content"
-                placeholder="Write your note..."
+                placeholder="Wpisz treść notatki..."
                 rows={6}
               />
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              Anuluj
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Note'}
+              {loading ? 'Tworzenie...' : 'Utwórz notatkę'}
             </Button>
           </DialogFooter>
         </form>

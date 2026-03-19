@@ -12,9 +12,9 @@ export default async function InvitationsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Invitations</h1>
+          <h1 className="text-3xl font-bold">Zaproszenia</h1>
           <p className="text-muted-foreground mt-1">
-            Manage platform invitations
+            Zarządzaj zaproszeniami na platformie
           </p>
         </div>
         <CreateInvitationDialog organizations={organizations} />

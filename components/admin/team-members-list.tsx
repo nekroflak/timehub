@@ -22,7 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Users, Trash2, MoreVertical, Shield, User } from 'lucide-react'
+import { Users, MoreVertical, Shield, User } from 'lucide-react'
 import type { OrgMember, Profile } from '@/lib/types'
 
 interface TeamMembersListProps {
@@ -49,9 +49,9 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Users className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">No team members yet</h3>
+          <h3 className="text-lg font-semibold">Brak członków zespołu</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Invite your first team member to get started
+            Zaproś pierwszego członka zespołu, aby zacząć
           </p>
         </CardContent>
       </Card>
@@ -71,7 +71,7 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
               </div>
               <div>
                 <h3 className="font-semibold">
-                  {member.profile?.full_name || 'Unnamed User'}
+                  {member.profile?.full_name || 'Użytkownik bez nazwy'}
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   {member.profile?.email}
@@ -82,9 +82,9 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
             <div className="flex items-center gap-4">
               <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
                 {member.role === 'admin' ? (
-                  <><Shield className="h-3 w-3 mr-1" /> Admin</>
+                  <><Shield className="h-3 w-3 mr-1" /> Administrator</>
                 ) : (
-                  <><User className="h-3 w-3 mr-1" /> Worker</>
+                  <><User className="h-3 w-3 mr-1" /> Pracownik</>
                 )}
               </Badge>
               
@@ -98,7 +98,7 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
                   <DropdownMenuItem
                     onClick={() => handleRoleChange(member.id, member.role === 'admin' ? 'worker' : 'admin')}
                   >
-                    {member.role === 'admin' ? 'Demote to Worker' : 'Promote to Admin'}
+                    {member.role === 'admin' ? 'Zmień na pracownika' : 'Zmień na administratora'}
                   </DropdownMenuItem>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -106,24 +106,24 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
                         onSelect={(e) => e.preventDefault()}
                         className="text-destructive focus:text-destructive"
                       >
-                        Remove from team
+                        Usuń z zespołu
                       </DropdownMenuItem>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Remove team member?</AlertDialogTitle>
+                        <AlertDialogTitle>Usunąć członka zespołu?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will remove {member.profile?.full_name || member.profile?.email} from the organization.
-                          They will lose access to all organization data.
+                          Spowoduje to usunięcie {member.profile?.full_name || member.profile?.email} z organizacji.
+                          Osoba ta straci dostęp do wszystkich danych organizacji.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Anuluj</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleRemove(member.id)}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          Remove
+                          Usuń
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

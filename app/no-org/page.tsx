@@ -10,7 +10,6 @@ export default async function NoOrgPage() {
 
   if (!user) redirect('/auth/login')
 
-  // Check if they do have a membership now (e.g. after accepting invite)
   const { data: membership } = await supabase
     .from('organization_members')
     .select('role')
@@ -20,7 +19,6 @@ export default async function NoOrgPage() {
   if (membership?.role === 'admin') redirect('/admin')
   if (membership?.role === 'worker') redirect('/workspace')
 
-  // Check if super admin
   const { data: profile } = await supabase
     .from('profiles')
     .select('platform_role')
@@ -39,23 +37,23 @@ export default async function NoOrgPage() {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">No Organization Yet</h1>
+          <h1 className="text-2xl font-bold">Brak przypisanej organizacji</h1>
           <p className="text-muted-foreground">
-            Your account exists, but you have not been added to any organization.
-            Please wait for an invitation from your organization admin.
+            Twoje konto istnieje, ale nie zostałeś jeszcze przypisany do żadnej organizacji.
+            Poczekaj na zaproszenie od administratora swojej firmy.
           </p>
         </div>
 
         <div className="rounded-lg border bg-card p-4 text-left space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Mail className="h-4 w-4" />
-            <span>Logged in as <strong className="text-foreground">{user.email}</strong></span>
+            <span>Zalogowany jako <strong className="text-foreground">{user.email}</strong></span>
           </div>
         </div>
 
         <form action={signOut}>
           <Button type="submit" variant="outline" className="w-full">
-            Sign out
+            Wyloguj się
           </Button>
         </form>
       </div>

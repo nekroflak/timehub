@@ -37,13 +37,25 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Building2 className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">No organizations yet</h3>
+          <h3 className="text-lg font-semibold">Brak organizacji</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Create your first organization to get started
+            Utwórz pierwszą organizację, aby zacząć
           </p>
         </CardContent>
       </Card>
     )
+  }
+
+  const planLabel: Record<string, string> = {
+    enterprise: 'Enterprise',
+    pro: 'Pro',
+    free: 'Bezpłatny',
+  }
+
+  const statusLabel: Record<string, string> = {
+    active: 'Aktywna',
+    trial: 'Próbna',
+    blocked: 'Zablokowana',
   }
 
   const planVariant: Record<string, 'default' | 'secondary' | 'outline'> = {
@@ -73,8 +85,8 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{org.name}</h3>
-                    <Badge variant={planVariant[org.plan] ?? 'outline'}>{org.plan}</Badge>
-                    <Badge variant={statusVariant[org.status] ?? 'outline'}>{org.status}</Badge>
+                    <Badge variant={planVariant[org.plan] ?? 'outline'}>{planLabel[org.plan] ?? org.plan}</Badge>
+                    <Badge variant={statusVariant[org.status] ?? 'outline'}>{statusLabel[org.status] ?? org.status}</Badge>
                   </div>
                   {org.slug && (
                     <p className="text-sm text-muted-foreground">/{org.slug}</p>
@@ -85,7 +97,7 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4" />
-                  <span className="text-sm">{memberCount} members</span>
+                  <span className="text-sm">{memberCount} członków</span>
                 </div>
 
                 <AlertDialog>
@@ -96,19 +108,19 @@ export function OrganizationsList({ organizations }: OrganizationsListProps) {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete organization?</AlertDialogTitle>
+                      <AlertDialogTitle>Usunąć organizację?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete {org.name} and all associated data. This cannot be undone.
+                        Spowoduje to trwałe usunięcie {org.name} i wszystkich powiązanych danych. Tej operacji nie można cofnąć.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>Anuluj</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDelete(org.id)}
                         disabled={deletingId === org.id}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        {deletingId === org.id ? 'Deleting...' : 'Delete'}
+                        {deletingId === org.id ? 'Usuwanie...' : 'Usuń'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

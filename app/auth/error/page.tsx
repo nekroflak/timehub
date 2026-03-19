@@ -11,20 +11,20 @@ export default function AuthErrorPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
             <AlertCircle className="h-6 w-6 text-destructive" />
           </div>
-          <CardTitle className="text-2xl font-semibold">Authentication Error</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Błąd uwierzytelniania</CardTitle>
           <CardDescription className="text-base">
-            Something went wrong during authentication. Please try again.
+            Coś poszło nie tak podczas logowania. Spróbuj ponownie.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Link href="/auth/login">
             <Button className="w-full">
-              Return to sign in
+              Wróć do logowania
             </Button>
           </Link>
           <Link href="/">
             <Button variant="outline" className="w-full">
-              Go to homepage
+              Przejdź na stronę główną
             </Button>
           </Link>
         </CardContent>
