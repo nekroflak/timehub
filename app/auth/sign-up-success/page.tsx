@@ -11,18 +11,18 @@ export default function SignUpSuccessPage() {
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <CheckCircle2 className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
+          <CardTitle className="text-2xl font-semibold">Sprawdź swoją skrzynkę</CardTitle>
           <CardDescription className="text-base">
-            We&apos;ve sent you a confirmation link. Please check your email to verify your account.
+            Wysłaliśmy Ci link potwierdzający. Sprawdź e-mail, aby zweryfikować swoje konto.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
-            After confirming your email, you&apos;ll be able to sign in and access your workspace.
+            Po potwierdzeniu e-maila będziesz mógł się zalogować i przejść do swojego miejsca pracy.
           </p>
           <Link href="/auth/login">
             <Button variant="outline" className="w-full">
-              Go to sign in
+              Przejdź do logowania
             </Button>
           </Link>
         </CardContent>

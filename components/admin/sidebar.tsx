@@ -26,9 +26,9 @@ interface AdminSidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Team', href: '/admin/team', icon: Users },
-  { name: 'Time Reports', href: '/admin/time-reports', icon: Clock },
+  { name: 'Pulpit', href: '/admin', icon: LayoutDashboard },
+  { name: 'Zespół', href: '/admin/team', icon: Users },
+  { name: 'Raporty czasu', href: '/admin/time-reports', icon: Clock },
   { name: 'Zatwierdzenia', href: '/admin/approvals', icon: CheckSquare },
 ]
 
@@ -41,7 +41,7 @@ export function AdminSidebar({ user, organization }: AdminSidebarProps) {
         <Building2 className="h-6 w-6 text-primary" />
         <div className="flex flex-col">
           <span className="font-semibold text-sm truncate">{organization.name}</span>
-          <span className="text-xs text-muted-foreground">Admin</span>
+          <span className="text-xs text-muted-foreground">Administrator</span>
         </div>
       </div>
       
@@ -77,7 +77,7 @@ export function AdminSidebar({ user, organization }: AdminSidebarProps) {
         <form action={signOut}>
           <Button variant="ghost" className="w-full justify-start gap-2" type="submit">
             <LogOut className="h-4 w-4" />
-            Sign out
+            Wyloguj się
           </Button>
         </form>
       </div>

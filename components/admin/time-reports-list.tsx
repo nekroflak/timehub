@@ -59,7 +59,7 @@ export function TimeReportsList({ entries, selectedMonth }: TimeReportsListProps
   // Build per-member summary
   const memberMap = new Map<string, MemberSummary>()
   for (const entry of entries) {
-    const name = entry.profile?.full_name || entry.profile?.email || 'Unknown'
+    const name = entry.profile?.full_name || entry.profile?.email || 'Nieznany'
     if (!memberMap.has(name)) {
       memberMap.set(name, { name, workHours: 0, vacationDays: 0, overtimeHours: 0 })
     }
@@ -200,7 +200,7 @@ export function TimeReportsList({ entries, selectedMonth }: TimeReportsListProps
                       })}
                     </TableCell>
                     <TableCell>
-                      {entry.profile?.full_name || entry.profile?.email || 'Unknown'}
+                      {entry.profile?.full_name || entry.profile?.email || 'Nieznany'}
                     </TableCell>
                     <TableCell>
                       {entry.type === 'vacation' ? (

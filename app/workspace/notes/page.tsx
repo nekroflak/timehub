@@ -9,9 +9,9 @@ export default async function NotesPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Notes</h1>
+          <h1 className="text-3xl font-bold">Notatki</h1>
           <p className="text-muted-foreground mt-1">
-            Your personal notes - visible only to you
+            Twoje prywatne notatki — widoczne tylko dla Ciebie
           </p>
         </div>
         <CreateNoteDialog />

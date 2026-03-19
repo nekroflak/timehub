@@ -8,9 +8,9 @@ export default async function SuperAdminDashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">Pulpit</h1>
         <p className="text-muted-foreground mt-1">
-          Overview of your platform
+          Przegląd platformy
         </p>
       </div>
 
@@ -18,7 +18,7 @@ export default async function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Organizations
+              Łączna liczba organizacji
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -30,7 +30,7 @@ export default async function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Users
+              Łączna liczba użytkowników
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -42,7 +42,7 @@ export default async function SuperAdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Invitations
+              Oczekujące zaproszenia
             </CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>

@@ -14,9 +14,9 @@ export default async function TeamPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Team</h1>
+          <h1 className="text-3xl font-bold">Zespół</h1>
           <p className="text-muted-foreground mt-1">
-            Manage your team members and invitations
+            Zarządzaj członkami zespołu i zaproszeniami
           </p>
         </div>
         <InviteTeamMemberDialog />
@@ -24,8 +24,8 @@ export default async function TeamPage() {
 
       <Tabs defaultValue="members">
         <TabsList>
-          <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
-          <TabsTrigger value="invitations">Pending ({invitations.filter(i => i.status === 'pending').length})</TabsTrigger>
+          <TabsTrigger value="members">Członkowie ({members.length})</TabsTrigger>
+          <TabsTrigger value="invitations">Oczekujące ({invitations.filter(i => i.status === 'pending').length})</TabsTrigger>
         </TabsList>
         <TabsContent value="members" className="mt-6">
           <TeamMembersList members={members} />

@@ -21,9 +21,9 @@ interface SuperAdminSidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/super-admin', icon: LayoutDashboard },
-  { name: 'Organizations', href: '/super-admin/organizations', icon: Building2 },
-  { name: 'Invitations', href: '/super-admin/invitations', icon: Mail },
+  { name: 'Pulpit', href: '/super-admin', icon: LayoutDashboard },
+  { name: 'Organizacje', href: '/super-admin/organizations', icon: Building2 },
+  { name: 'Zaproszenia', href: '/super-admin/invitations', icon: Mail },
 ]
 
 export function SuperAdminSidebar({ user }: SuperAdminSidebarProps) {
@@ -33,7 +33,7 @@ export function SuperAdminSidebar({ user }: SuperAdminSidebarProps) {
     <aside className="flex w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <Shield className="h-6 w-6 text-primary" />
-        <span className="font-semibold">Super Admin</span>
+        <span className="font-semibold">Super Administrator</span>
       </div>
       
       <nav className="flex-1 p-4">
@@ -68,7 +68,7 @@ export function SuperAdminSidebar({ user }: SuperAdminSidebarProps) {
         <form action={signOut}>
           <Button variant="ghost" className="w-full justify-start gap-2" type="submit">
             <LogOut className="h-4 w-4" />
-            Sign out
+            Wyloguj się
           </Button>
         </form>
       </div>

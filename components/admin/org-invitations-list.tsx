@@ -34,12 +34,12 @@ export function OrgInvitationsList({ invitations }: OrgInvitationsListProps) {
 
   function getStatus(invitation: Invitation) {
     if (invitation.status === 'accepted') {
-      return { label: 'Accepted', variant: 'default' as const, icon: CheckCircle2 }
+      return { label: 'Zaakceptowane', variant: 'default' as const, icon: CheckCircle2 }
     }
     if (invitation.status === 'expired' || invitation.status === 'cancelled') {
-      return { label: invitation.status === 'expired' ? 'Expired' : 'Cancelled', variant: 'secondary' as const, icon: XCircle }
+      return { label: invitation.status === 'expired' ? 'Wygasłe' : 'Anulowane', variant: 'secondary' as const, icon: XCircle }
     }
-    return { label: 'Pending', variant: 'outline' as const, icon: Clock }
+    return { label: 'Oczekujące', variant: 'outline' as const, icon: Clock }
   }
 
   const pendingInvitations = invitations.filter(i => i.status === 'pending')
@@ -49,9 +49,9 @@ export function OrgInvitationsList({ invitations }: OrgInvitationsListProps) {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <Mail className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">No pending invitations</h3>
+          <h3 className="text-lg font-semibold">Brak oczekujących zaproszeń</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            All invitations have been accepted or expired
+            Wszystkie zaproszenia zostały zaakceptowane lub wygasły
           </p>
         </CardContent>
       </Card>
@@ -74,7 +74,7 @@ export function OrgInvitationsList({ invitations }: OrgInvitationsListProps) {
                 <div>
                   <h3 className="font-semibold">{invitation.email}</h3>
                   <p className="text-sm text-muted-foreground capitalize">
-                    {invitation.role}
+                    {invitation.role === 'admin' ? 'Administrator' : 'Pracownik'}
                   </p>
                 </div>
               </div>
@@ -93,19 +93,19 @@ export function OrgInvitationsList({ invitations }: OrgInvitationsListProps) {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Revoke invitation?</AlertDialogTitle>
+                      <AlertDialogTitle>Cofnąć zaproszenie?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will revoke the invitation sent to {invitation.email}.
+                        Spowoduje to unieważnienie zaproszenia wysłanego do {invitation.email}.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>Anuluj</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleRevoke(invitation.id)}
                         disabled={deletingId === invitation.id}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        {deletingId === invitation.id ? 'Revoking...' : 'Revoke'}
+                        {deletingId === invitation.id ? 'Cofanie...' : 'Cofnij'}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

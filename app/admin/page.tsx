@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold">{stats.organizationName}</h1>
         <p className="text-muted-foreground mt-1">
-          Organization dashboard overview
+          Przegląd panelu organizacji
         </p>
       </div>
 
@@ -23,7 +23,7 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Team Members
+              Członkowie zespołu
             </CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -35,7 +35,7 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Hours This Month
+              Godziny w tym miesiącu
             </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -47,7 +47,7 @@ export default async function AdminDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Invitations
+              Oczekujące zaproszenia
             </CardTitle>
             <Mail className="h-4 w-4 text-muted-foreground" />
           </CardHeader>

@@ -25,9 +25,9 @@ interface WorkspaceSidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/workspace', icon: LayoutDashboard },
-  { name: 'Time Tracking', href: '/workspace/time', icon: Clock },
-  { name: 'Notes', href: '/workspace/notes', icon: FileText },
+  { name: 'Pulpit', href: '/workspace', icon: LayoutDashboard },
+  { name: 'Czas pracy', href: '/workspace/time', icon: Clock },
+  { name: 'Notatki', href: '/workspace/notes', icon: FileText },
   { name: 'Tablica', href: '/workspace/board', icon: KanbanSquare },
 ]
 
@@ -40,7 +40,7 @@ export function WorkspaceSidebar({ user, organization }: WorkspaceSidebarProps) 
         <Briefcase className="h-6 w-6 text-primary" />
         <div className="flex flex-col">
           <span className="font-semibold text-sm truncate">{organization.name}</span>
-          <span className="text-xs text-muted-foreground">Workspace</span>
+          <span className="text-xs text-muted-foreground">Pracownik</span>
         </div>
       </div>
       
@@ -76,7 +76,7 @@ export function WorkspaceSidebar({ user, organization }: WorkspaceSidebarProps) 
         <form action={signOut}>
           <Button variant="ghost" className="w-full justify-start gap-2" type="submit">
             <LogOut className="h-4 w-4" />
-            Sign out
+            Wyloguj się
           </Button>
         </form>
       </div>

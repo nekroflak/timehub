@@ -71,18 +71,18 @@ export function InviteTeamMemberDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Invite Member
+          Zaproś członka
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {inviteLink ? 'Invitation Created' : 'Invite Team Member'}
+            {inviteLink ? 'Zaproszenie utworzone' : 'Zaproś członka zespołu'}
           </DialogTitle>
           <DialogDescription>
             {inviteLink 
-              ? 'Share this link with the new team member. It expires in 7 days.'
-              : 'Send an invitation to join your organization.'
+              ? 'Udostępnij ten link nowemu członkowi zespołu. Wygasa po 7 dniach.'
+              : 'Wyślij zaproszenie do dołączenia do organizacji.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -96,7 +96,7 @@ export function InviteTeamMemberDialog() {
               </Button>
             </div>
             <DialogFooter>
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>Gotowe</Button>
             </DialogFooter>
           </div>
         ) : (
@@ -109,35 +109,35 @@ export function InviteTeamMemberDialog() {
               )}
               
               <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">Adres e-mail</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="colleague@example.com"
+                  placeholder="kolega@example.com"
                   required
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">Rola</Label>
                 <Select value={role} onValueChange={setRole}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
+                    <SelectValue placeholder="Wybierz rolę" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="worker">Worker - Can track time and view own data</SelectItem>
-                    <SelectItem value="admin">Admin - Full access to organization</SelectItem>
+                    <SelectItem value="worker">Pracownik — rejestruje czas i przegląda własne dane</SelectItem>
+                    <SelectItem value="admin">Administrator — pełny dostęp do organizacji</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Sending...' : 'Send Invitation'}
+                {loading ? 'Wysyłanie...' : 'Wyślij zaproszenie'}
               </Button>
             </DialogFooter>
           </form>

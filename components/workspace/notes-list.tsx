@@ -57,9 +57,9 @@ export function NotesList({ notes }: NotesListProps) {
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold">No notes yet</h3>
+          <h3 className="text-lg font-semibold">Brak notatek</h3>
           <p className="text-muted-foreground text-sm mt-1">
-            Create your first note to get started
+            Utwórz pierwszą notatkę, aby zacząć
           </p>
         </CardContent>
       </Card>
@@ -95,19 +95,19 @@ export function NotesList({ notes }: NotesListProps) {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete note?</AlertDialogTitle>
+                        <AlertDialogTitle>Usunąć notatkę?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently delete this note. This action cannot be undone.
+                          Spowoduje to trwałe usunięcie tej notatki. Tej operacji nie można cofnąć.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>Anuluj</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => handleDelete(note.id)}
                           disabled={deletingId === note.id}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                          {deletingId === note.id ? 'Deleting...' : 'Delete'}
+                          {deletingId === note.id ? 'Usuwanie...' : 'Usuń'}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -117,10 +117,10 @@ export function NotesList({ notes }: NotesListProps) {
             </CardHeader>
             <CardContent className="flex-1">
               <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">
-                {note.content || 'No content'}
+                {note.content || 'Brak treści'}
               </p>
               <p className="text-xs text-muted-foreground mt-4">
-                Updated {new Date(note.updated_at).toLocaleDateString()}
+                Zaktualizowano {new Date(note.updated_at).toLocaleDateString('pl-PL')}
               </p>
             </CardContent>
           </Card>
@@ -130,12 +130,12 @@ export function NotesList({ notes }: NotesListProps) {
       <Dialog open={!!editingNote} onOpenChange={(open) => !open && setEditingNote(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Note</DialogTitle>
+            <DialogTitle>Edytuj notatkę</DialogTitle>
           </DialogHeader>
           <form action={handleUpdate}>
             <div className="flex flex-col gap-4 py-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-title">Title</Label>
+                <Label htmlFor="edit-title">Tytuł</Label>
                 <Input
                   id="edit-title"
                   name="title"
@@ -145,7 +145,7 @@ export function NotesList({ notes }: NotesListProps) {
               </div>
 
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-content">Content</Label>
+                <Label htmlFor="edit-content">Treść</Label>
                 <Textarea
                   id="edit-content"
                   name="content"
@@ -156,10 +156,10 @@ export function NotesList({ notes }: NotesListProps) {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditingNote(null)}>
-                Cancel
+                Anuluj
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? 'Zapisywanie...' : 'Zapisz zmiany'}
               </Button>
             </DialogFooter>
           </form>
