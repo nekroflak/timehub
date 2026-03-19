@@ -100,6 +100,36 @@ export interface TimesheetSubmission {
   profile?: Pick<Profile, 'full_name' | 'email'>
 }
 
+// Tasks module
+export type TaskStatus = 'todo' | 'assigned' | 'done'
+
+export interface Task {
+  id: string
+  organization_id: string
+  title: string
+  description: string | null
+  status: TaskStatus
+  assigned_to: string | null
+  created_by: string
+  assigned_at: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  assignee?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
+  creator?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
+  comments_count?: number
+}
+
+export interface TaskComment {
+  id: string
+  task_id: string
+  organization_id: string
+  user_id: string
+  content: string
+  created_at: string
+  author?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
+}
+
 // Resolved user context used across layouts
 export interface UserContext {
   profile: Profile

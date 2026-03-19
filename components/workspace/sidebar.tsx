@@ -11,6 +11,7 @@ import {
   FileText,
   LogOut,
   Briefcase,
+  KanbanSquare,
 } from 'lucide-react'
 
 interface WorkspaceSidebarProps {
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Dashboard', href: '/workspace', icon: LayoutDashboard },
   { name: 'Time Tracking', href: '/workspace/time', icon: Clock },
   { name: 'Notes', href: '/workspace/notes', icon: FileText },
+  { name: 'Tablica', href: '/workspace/board', icon: KanbanSquare },
 ]
 
 export function WorkspaceSidebar({ user, organization }: WorkspaceSidebarProps) {
