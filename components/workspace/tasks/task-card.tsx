@@ -8,9 +8,16 @@ import { MessageSquare, UserCheck, AlertTriangle, User } from 'lucide-react'
 import type { Task } from '@/lib/types'
 import { TaskDetailSheet } from './task-detail-sheet'
 
+interface OrgMember {
+  id: string
+  full_name: string | null
+  email: string
+}
+
 interface TaskCardProps {
   task: Task
   currentUserId: string
+  orgMembers: OrgMember[]
 }
 
 function isOverdue(task: Task): boolean {
@@ -20,7 +27,7 @@ function isOverdue(task: Task): boolean {
   return nowMs - assignedMs >= 48 * 60 * 60 * 1000
 }
 
-export function TaskCard({ task, currentUserId }: TaskCardProps) {
+export function TaskCard({ task, currentUserId, orgMembers }: TaskCardProps) {
   const [detailOpen, setDetailOpen] = useState(false)
   const overdue = isOverdue(task)
 
@@ -88,6 +95,7 @@ export function TaskCard({ task, currentUserId }: TaskCardProps) {
       <TaskDetailSheet
         task={task}
         currentUserId={currentUserId}
+        orgMembers={orgMembers}
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />

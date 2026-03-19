@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { UserCheck, AlertTriangle, Loader2, Send, Trash2 } from 'lucide-react'
+import { UserCheck, AlertTriangle, Loader2, Send, Trash2, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Task, TaskComment, TaskStatus } from '@/lib/types'
 import {
@@ -28,10 +28,18 @@ import {
   moveTask,
   deleteTask,
 } from '@/lib/actions/tasks'
+import { AssignUserDialog } from './assign-user-dialog'
+
+interface OrgMember {
+  id: string
+  full_name: string | null
+  email: string
+}
 
 interface TaskDetailSheetProps {
   task: Task
   currentUserId: string
+  orgMembers: OrgMember[]
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -57,12 +65,13 @@ function formatDate(iso: string) {
   })
 }
 
-export function TaskDetailSheet({ task, currentUserId, open, onOpenChange }: TaskDetailSheetProps) {
+export function TaskDetailSheet({ task, currentUserId, orgMembers, open, onOpenChange }: TaskDetailSheetProps) {
   const [comments, setComments] = useState<TaskComment[]>([])
   const [commentText, setCommentText] = useState('')
   const [loadingComments, setLoadingComments] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false)
 
   const overdue = isOverdue(task)
   const isAssignedToMe = task.assigned_to === currentUserId
@@ -158,18 +167,39 @@ export function TaskDetailSheet({ task, currentUserId, open, onOpenChange }: Tas
         </div>
 
         {/* Assignee row */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <UserCheck className="h-4 w-4" />
-            <span>{assigneeName ?? 'Nieprzypisane'}</span>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+            <UserCheck className="h-4 w-4 shrink-0" />
+            <span className="truncate">{assigneeName ?? 'Nieprzypisane'}</span>
           </div>
-          {isUnassigned && (
-            <Button size="sm" variant="outline" onClick={handleAssignToMe} disabled={isPending}>
-              {isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-              Przypisz do mnie
+          <div className="flex items-center gap-2 shrink-0">
+            {isUnassigned && (
+              <Button size="sm" variant="outline" onClick={handleAssignToMe} disabled={isPending}>
+                {isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                Przypisz do mnie
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAssignDialogOpen(true)}
+              disabled={isPending}
+            >
+              <Users className="h-3 w-3 mr-1" />
+              {isUnassigned ? 'Przypisz do...' : 'Zmień osobę'}
             </Button>
-          )}
+          </div>
         </div>
+
+        {/* Assign user dialog */}
+        <AssignUserDialog
+          taskId={task.id}
+          currentAssigneeId={task.assigned_to}
+          members={orgMembers}
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          onAssigned={() => onOpenChange(false)}
+        />
 
         {/* Description */}
         {task.description && (

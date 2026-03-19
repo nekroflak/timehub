@@ -1,12 +1,12 @@
-import { getOrgTasks, getCurrentUserId } from '@/lib/actions/tasks'
+import { getOrgTasks, getCurrentUserId, getOrgMembers } from '@/lib/actions/tasks'
 import { TaskBoard } from '@/components/workspace/tasks/task-board'
 import { CreateTaskDialog } from '@/components/workspace/tasks/create-task-dialog'
-import { ClipboardList } from 'lucide-react'
 
 export default async function BoardPage() {
-  const [tasks, currentUserId] = await Promise.all([
+  const [tasks, currentUserId, orgMembers] = await Promise.all([
     getOrgTasks(),
     getCurrentUserId(),
+    getOrgMembers(),
   ])
 
   return (
@@ -21,7 +21,7 @@ export default async function BoardPage() {
         <CreateTaskDialog />
       </div>
 
-      <TaskBoard tasks={tasks} currentUserId={currentUserId ?? ''} />
+      <TaskBoard tasks={tasks} currentUserId={currentUserId ?? ''} orgMembers={orgMembers} />
     </div>
   )
 }

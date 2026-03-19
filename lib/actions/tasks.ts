@@ -261,6 +261,64 @@ export async function addTaskComment(taskId: string, content: string): Promise<{
 }
 
 // ----------------------------------------------------------------
+// Assign task to a specific org member
+// ----------------------------------------------------------------
+export async function assignTaskToUser(taskId: string, userId: string): Promise<{ error?: string; success?: boolean }> {
+  const ctx = await getTaskContext()
+  if (!ctx) return { error: 'Unauthorized' }
+
+  // Verify the target user is a member of the same org
+  const { data: membership } = await ctx.supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', ctx.organizationId)
+    .eq('user_id', userId)
+    .single()
+
+  if (!membership) return { error: 'Użytkownik nie należy do tej organizacji' }
+
+  const { error } = await ctx.supabase
+    .from('tasks')
+    .update({
+      assigned_to: userId,
+      status: 'assigned',
+      assigned_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', taskId)
+    .eq('organization_id', ctx.organizationId)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/workspace/board')
+  return { success: true }
+}
+
+// ----------------------------------------------------------------
+// Get all members of the current org (for assignment picker)
+// ----------------------------------------------------------------
+export async function getOrgMembers(): Promise<{ id: string; full_name: string | null; email: string }[]> {
+  const ctx = await getTaskContext()
+  if (!ctx) return []
+
+  const { data: members } = await ctx.supabase
+    .from('organization_members')
+    .select('user_id')
+    .eq('organization_id', ctx.organizationId)
+
+  if (!members || members.length === 0) return []
+
+  const userIds = members.map(m => m.user_id)
+
+  const { data: profiles } = await ctx.supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+
+  return profiles ?? []
+}
+
+// ----------------------------------------------------------------
 // Get current user id (needed by client components)
 // ----------------------------------------------------------------
 export async function getCurrentUserId(): Promise<string | null> {

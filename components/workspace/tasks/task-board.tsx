@@ -39,12 +39,19 @@ function isOverdue(task: Task): boolean {
   return Date.now() - new Date(task.assigned_at).getTime() >= 48 * 60 * 60 * 1000
 }
 
+interface OrgMember {
+  id: string
+  full_name: string | null
+  email: string
+}
+
 interface TaskBoardProps {
   tasks: Task[]
   currentUserId: string
+  orgMembers: OrgMember[]
 }
 
-export function TaskBoard({ tasks, currentUserId }: TaskBoardProps) {
+export function TaskBoard({ tasks, currentUserId, orgMembers }: TaskBoardProps) {
   const [filter, setFilter] = useState<Filter>('all')
 
   const filtered = tasks.filter(t => {
@@ -127,6 +134,7 @@ export function TaskBoard({ tasks, currentUserId }: TaskBoardProps) {
                       key={task.id}
                       task={task}
                       currentUserId={currentUserId}
+                      orgMembers={orgMembers}
                     />
                   ))
                 )}
