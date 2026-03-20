@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { removeMember, updateMemberRole } from '@/lib/actions/admin'
+import { assignMemberDepartment } from '@/lib/actions/tasks'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,16 +21,25 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Users, MoreVertical, Shield, User } from 'lucide-react'
-import type { OrgMember, Profile } from '@/lib/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Users, MoreVertical, Shield, User, Layers } from 'lucide-react'
+import type { OrgMember, Profile, Department } from '@/lib/types'
 
 interface TeamMembersListProps {
   members: (OrgMember & { profile: Profile | null })[]
+  departments: Department[]
 }
 
-export function TeamMembersList({ members }: TeamMembersListProps) {
+export function TeamMembersList({ members, departments }: TeamMembersListProps) {
   const [processingId, setProcessingId] = useState<string | null>(null)
 
   async function handleRemove(id: string) {
@@ -41,6 +51,12 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
   async function handleRoleChange(id: string, newRole: 'admin' | 'worker') {
     setProcessingId(id)
     await updateMemberRole(id, newRole)
+    setProcessingId(null)
+  }
+
+  async function handleDepartmentChange(membershipId: string, departmentId: string) {
+    setProcessingId(membershipId)
+    await assignMemberDepartment(membershipId, departmentId === 'none' ? null : departmentId)
     setProcessingId(null)
   }
 
@@ -57,6 +73,8 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
       </Card>
     )
   }
+
+  const deptMap = Object.fromEntries(departments.map(d => [d.id, d.name]))
 
   return (
     <div className="grid gap-4">
@@ -78,8 +96,30 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
                 </p>
               </div>
             </div>
-            
-            <div className="flex items-center gap-4">
+
+            <div className="flex items-center gap-3">
+              {/* Department selector */}
+              <div className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                <Select
+                  value={member.department_id ?? 'none'}
+                  onValueChange={(val) => handleDepartmentChange(member.id, val)}
+                  disabled={processingId === member.id}
+                >
+                  <SelectTrigger className="h-8 w-40 text-xs">
+                    <SelectValue placeholder="Brak działu">
+                      {member.department_id ? deptMap[member.department_id] ?? 'Nieznany' : 'Brak działu'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Brak działu</SelectItem>
+                    {departments.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <Badge variant={member.role === 'admin' ? 'default' : 'secondary'}>
                 {member.role === 'admin' ? (
                   <><Shield className="h-3 w-3 mr-1" /> Administrator</>
@@ -87,7 +127,7 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
                   <><User className="h-3 w-3 mr-1" /> Pracownik</>
                 )}
               </Badge>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" disabled={processingId === member.id}>
@@ -100,9 +140,10 @@ export function TeamMembersList({ members }: TeamMembersListProps) {
                   >
                     {member.role === 'admin' ? 'Zmień na pracownika' : 'Zmień na administratora'}
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onSelect={(e) => e.preventDefault()}
                         className="text-destructive focus:text-destructive"
                       >

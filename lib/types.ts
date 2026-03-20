@@ -31,6 +31,7 @@ export interface OrgMember {
   organization_id: string
   user_id: string
   role: OrgRole
+  department_id: string | null
   created_at: string
   organization?: Organization
   profile?: Profile
@@ -48,6 +49,14 @@ export interface Invitation {
   accepted_at: string | null
   created_at: string
   organization?: Organization
+}
+
+export interface Department {
+  id: string
+  organization_id: string
+  name: string
+  created_at: string
+  updated_at: string
 }
 
 export interface TimeEntry {
@@ -112,12 +121,14 @@ export interface Task {
   assigned_to: string | null
   created_by: string
   assigned_at: string | null
+  department_id: string | null
   created_at: string
   updated_at: string
   // joined
   assignee?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
   creator?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
   comments_count?: number
+  department?: Pick<Department, 'id' | 'name'> | null
 }
 
 export interface TaskComment {

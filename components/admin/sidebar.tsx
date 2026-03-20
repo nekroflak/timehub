@@ -12,6 +12,7 @@ import {
   LogOut,
   Building2,
   CheckSquare,
+  Layers,
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -28,6 +29,7 @@ interface AdminSidebarProps {
 const navigation = [
   { name: 'Pulpit', href: '/admin', icon: LayoutDashboard },
   { name: 'Zespół', href: '/admin/team', icon: Users },
+  { name: 'Działy', href: '/admin/departments', icon: Layers },
   { name: 'Raporty czasu', href: '/admin/time-reports', icon: Clock },
   { name: 'Zatwierdzenia', href: '/admin/approvals', icon: CheckSquare },
 ]
