@@ -287,13 +287,13 @@ export default function LandingPage() {
             </a>
 
             <a
-              href="mailto:kamilurbanmail@gmaill.com"
+              href="mailto:kamilurbanmail@gmail.com"
               className="flex items-center gap-3 rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
             >
               <Mail className="h-5 w-5 text-primary shrink-0" />
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">E-mail</p>
-                <p className="font-semibold">kamilurbanmail@gmaill.com</p>
+                <p className="font-semibold">kamilurbanmail@gmail.com</p>
               </div>
             </a>
 
@@ -306,7 +306,7 @@ export default function LandingPage() {
               <Linkedin className="h-5 w-5 text-primary shrink-0" />
               <div className="text-left">
                 <p className="text-xs text-muted-foreground">LinkedIn</p>
-                <p className="font-semibold">kamilurban-</p>
+                <p className="font-semibold">Zobacz profil</p>
               </div>
             </a>
           </div>
