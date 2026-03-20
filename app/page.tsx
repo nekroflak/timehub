@@ -10,7 +10,10 @@ import {
   BarChart3,
   FileText,
   KanbanSquare,
-  CheckSquare
+  CheckSquare,
+  Phone,
+  Mail,
+  Linkedin,
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -29,6 +32,9 @@ export default function LandingPage() {
             </a>
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Jak to działa
+            </a>
+            <a href="#contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Kontakt
             </a>
           </nav>
           <div className="flex items-center gap-3">
@@ -55,12 +61,12 @@ export default function LandingPage() {
             rozliczeniami bez chaosu, Excela i rozproszonych wiadomości.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/auth/login">
+            <a href="#contact">
               <Button size="lg" className="gap-2">
                 Umów demo
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
             <a href="#features">
               <Button variant="outline" size="lg">
                 Zobacz, jak to działa
@@ -221,17 +227,17 @@ export default function LandingPage() {
             Pokażemy Ci, jak uporządkować czas pracy, zadania i proces akceptacji w zespole.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/auth/login">
+            <a href="#contact">
               <Button size="lg" className="gap-2">
                 Umów demo
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </Link>
-            <Link href="/auth/login">
+            </a>
+            <a href="#contact">
               <Button variant="outline" size="lg">
                 Skontaktuj się z nami
               </Button>
-            </Link>
+            </a>
           </div>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
@@ -254,6 +260,55 @@ export default function LandingPage() {
               <CheckCircle2 className="h-4 w-4 text-primary" />
               zadania dla zespołu
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 md:py-32 bg-card border-y">
+        <div className="mx-auto max-w-3xl px-4 text-center">
+          <h2 className="text-3xl font-bold md:text-4xl text-balance">
+            Umów krótkie demo
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto text-pretty">
+            Skontaktuj się, jeśli chcesz zobaczyć jak SimplyDesk może działać w Twojej firmie. Najlepiej napisz lub zadzwoń — odpowiadam osobiście.
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-6">
+            <a
+              href="tel:726872551"
+              className="flex items-center gap-3 rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
+            >
+              <Phone className="h-5 w-5 text-primary shrink-0" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">Telefon</p>
+                <p className="font-semibold">726 872 551</p>
+              </div>
+            </a>
+
+            <a
+              href="mailto:kamilurbanmail@gmaill.com"
+              className="flex items-center gap-3 rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
+            >
+              <Mail className="h-5 w-5 text-primary shrink-0" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">E-mail</p>
+                <p className="font-semibold">kamilurbanmail@gmaill.com</p>
+              </div>
+            </a>
+
+            <a
+              href="https://www.linkedin.com/in/kamilurban-/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
+            >
+              <Linkedin className="h-5 w-5 text-primary shrink-0" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">LinkedIn</p>
+                <p className="font-semibold">kamilurban-</p>
+              </div>
+            </a>
           </div>
         </div>
       </section>
