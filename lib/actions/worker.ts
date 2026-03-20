@@ -342,6 +342,44 @@ export async function submitTimesheet(month: string): Promise<{ error?: string; 
   return { success: true }
 }
 
+export async function getWorkerAlerts() {
+  const ctx = await getWorkerContext()
+  if (!ctx) return null
+
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+  const overdueThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+
+  const [submissionResult, overdueTasksResult] = await Promise.all([
+    ctx.supabase
+      .from('timesheet_submissions')
+      .select('status, comment')
+      .eq('user_id', ctx.user.id)
+      .eq('organization_id', ctx.organizationId)
+      .eq('year', currentYear)
+      .eq('month', currentMonth)
+      .single(),
+    ctx.supabase
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('assigned_to', ctx.user.id)
+      .eq('status', 'assigned')
+      .lte('assigned_at', overdueThreshold),
+  ])
+
+  const submission = submissionResult.data
+  const overdueCount = overdueTasksResult.count || 0
+
+  return {
+    submissionStatus: submission?.status ?? null,  // null means not submitted
+    rejectionComment: submission?.status === 'rejected' ? (submission.comment ?? null) : null,
+    overdueTasksCount: overdueCount,
+    currentMonthLabel: `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
+  }
+}
+
 // Notes
 export async function getMyNotes() {
   const ctx = await getWorkerContext()

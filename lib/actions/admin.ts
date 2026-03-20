@@ -206,6 +206,43 @@ export async function revokeOrgInvitation(invitationId: string): Promise<{ error
   return { success: true }
 }
 
+export async function getAdminAlerts() {
+  const ctx = await getAdminContext()
+  if (!ctx) return null
+
+  const overdueThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth() + 1
+
+  const [submissionsResult, overdueTasksResult, pendingInvitesResult] = await Promise.all([
+    ctx.supabase
+      .from('timesheet_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'submitted')
+      .eq('year', currentYear)
+      .eq('month', currentMonth),
+    ctx.supabase
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'assigned')
+      .lte('assigned_at', overdueThreshold),
+    ctx.supabase
+      .from('invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'pending'),
+  ])
+
+  return {
+    pendingApprovals: submissionsResult.count || 0,
+    overdueTasksCount: overdueTasksResult.count || 0,
+    pendingInvitations: pendingInvitesResult.count || 0,
+  }
+}
+
 export async function getOrgTimeEntries(startDate?: string, endDate?: string) {
   const ctx = await getAdminContext()
   if (!ctx) return []

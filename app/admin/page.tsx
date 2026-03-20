@@ -1,13 +1,56 @@
-import { getAdminStats } from '@/lib/actions/admin'
+import { getAdminStats, getAdminAlerts } from '@/lib/actions/admin'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, Clock, Mail } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import { AlertsPanel } from '@/components/shared/alerts-panel'
+import type { AlertItem } from '@/components/shared/alerts-panel'
 
 export default async function AdminDashboard() {
-  const stats = await getAdminStats()
+  const [stats, alerts] = await Promise.all([
+    getAdminStats(),
+    getAdminAlerts(),
+  ])
 
   if (!stats) {
     redirect('/auth/login')
+  }
+
+  const alertItems: AlertItem[] = []
+
+  if (alerts) {
+    if (alerts.pendingApprovals > 0) {
+      alertItems.push({
+        id: 'approvals',
+        message: alerts.pendingApprovals === 1
+          ? '1 miesiąc czeka na akceptację'
+          : `${alerts.pendingApprovals} miesiące czekają na akceptację`,
+        href: '/admin/approvals',
+        severity: 'warning',
+        icon: 'approval',
+      })
+    }
+    if (alerts.overdueTasksCount > 0) {
+      alertItems.push({
+        id: 'overdue-tasks',
+        message: alerts.overdueTasksCount === 1
+          ? '1 zadanie jest przypisane od ponad 48 godzin'
+          : `${alerts.overdueTasksCount} zadania są przypisane od ponad 48 godzin`,
+        href: '/admin/approvals',
+        severity: 'warning',
+        icon: 'tasks',
+      })
+    }
+    if (alerts.pendingInvitations > 0) {
+      alertItems.push({
+        id: 'invitations',
+        message: alerts.pendingInvitations === 1
+          ? '1 zaproszenie oczekuje na akceptację'
+          : `${alerts.pendingInvitations} zaproszenia oczekują na akceptację`,
+        href: '/admin/team',
+        severity: 'info',
+        icon: 'mail',
+      })
+    }
   }
 
   return (
@@ -19,7 +62,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -56,6 +99,8 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertsPanel alerts={alertItems} />
     </div>
   )
 }
