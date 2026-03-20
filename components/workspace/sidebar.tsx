@@ -12,6 +12,7 @@ import {
   LogOut,
   Briefcase,
   KanbanSquare,
+  Sun,
 } from 'lucide-react'
 
 interface WorkspaceSidebarProps {
@@ -26,6 +27,7 @@ interface WorkspaceSidebarProps {
 
 const navigation = [
   { name: 'Pulpit', href: '/workspace', icon: LayoutDashboard },
+  { name: 'Mój dzień', href: '/workspace/today', icon: Sun },
   { name: 'Czas pracy', href: '/workspace/time', icon: Clock },
   { name: 'Notatki', href: '/workspace/notes', icon: FileText },
   { name: 'Tablica', href: '/workspace/board', icon: KanbanSquare },
