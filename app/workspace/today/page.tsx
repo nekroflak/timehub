@@ -1,21 +1,37 @@
-import { getCalendarConnectionStatus, getTodayCalendarEvents } from '@/lib/actions/calendar'
+import {
+  getCalendarConnectionStatus,
+  getTodayCalendarEvents,
+  getOutlookConnectionStatus,
+  getTodayOutlookEvents,
+} from '@/lib/actions/calendar'
 import { getOrgTasks, getCurrentUserId } from '@/lib/actions/tasks'
 import { CalendarConnectCard } from '@/components/workspace/today/calendar-connect-card'
 import { CalendarEventsList } from '@/components/workspace/today/calendar-events-list'
 import { TodayTasksList } from '@/components/workspace/today/today-tasks-list'
 import { Sun } from 'lucide-react'
+import type { CalendarEvent } from '@/lib/actions/calendar'
 
 export default async function TodayPage() {
-  const [isConnected, currentUserId, allTasks] = await Promise.all([
+  const [isGoogleConnected, isOutlookConnected, currentUserId, allTasks] = await Promise.all([
     getCalendarConnectionStatus(),
+    getOutlookConnectionStatus(),
     getCurrentUserId(),
     getOrgTasks(),
   ])
 
-  // Calendar events only if connected
-  const calendarEvents = isConnected ? await getTodayCalendarEvents() : []
+  // Fetch events from connected providers in parallel
+  const [googleEvents, outlookEvents] = await Promise.all([
+    isGoogleConnected ? getTodayCalendarEvents() : Promise.resolve([] as CalendarEvent[]),
+    isOutlookConnected ? getTodayOutlookEvents() : Promise.resolve([] as CalendarEvent[]),
+  ])
 
-  // My tasks = assigned to me (any status except done)
+  // Merge and sort by start time
+  const calendarEvents = [...googleEvents, ...outlookEvents].sort((a, b) => {
+    const ta = a.start.dateTime ?? a.start.date ?? ''
+    const tb = b.start.dateTime ?? b.start.date ?? ''
+    return ta.localeCompare(tb)
+  })
+
   const myTasks = allTasks.filter(
     t => t.assigned_to === currentUserId && t.status !== 'done'
   )
@@ -26,8 +42,6 @@ export default async function TodayPage() {
     month: 'long',
     year: 'numeric',
   })
-
-  // Capitalize first letter
   const todayLabel = today.charAt(0).toUpperCase() + today.slice(1)
 
   return (
@@ -51,8 +65,13 @@ export default async function TodayPage() {
 
         {/* Right column: calendar */}
         <div className="space-y-4">
-          <CalendarConnectCard isConnected={isConnected} />
-          {isConnected && <CalendarEventsList events={calendarEvents} />}
+          <CalendarConnectCard
+            isGoogleConnected={isGoogleConnected}
+            isOutlookConnected={isOutlookConnected}
+          />
+          {(isGoogleConnected || isOutlookConnected) && (
+            <CalendarEventsList events={calendarEvents} />
+          )}
         </div>
       </div>
     </div>

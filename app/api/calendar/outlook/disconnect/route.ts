@@ -10,7 +10,7 @@ export async function DELETE() {
     .from('user_calendar_tokens')
     .delete()
     .eq('user_id', user.id)
-    .eq('provider', 'google')
+    .eq('provider', 'outlook')
 
   return NextResponse.json({ success: true })
 }
