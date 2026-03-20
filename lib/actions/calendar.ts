@@ -13,14 +13,17 @@ export interface CalendarEvent {
   colorId?: string
 }
 
-async function getValidAccessToken(userId: string): Promise<string | null> {
+async function getValidGoogleAccessToken(userId: string): Promise<string | null> {
   const supabase = await createClient()
 
-  const { data: tokenRow } = await supabase
+  const { data: tokenRow, error } = await supabase
     .from('user_calendar_tokens')
     .select('access_token, refresh_token, expires_at')
     .eq('user_id', userId)
-    .single()
+    .eq('provider', 'google')
+    .maybeSingle()
+
+  console.log('[v0] getValidGoogleAccessToken: tokenRow=', tokenRow, 'error=', error)
 
   if (!tokenRow) return null
 
@@ -28,9 +31,13 @@ async function getValidAccessToken(userId: string): Promise<string | null> {
     ? new Date(tokenRow.expires_at) <= new Date(Date.now() + 60_000)
     : false
 
-  if (!isExpired) return tokenRow.access_token
+  if (!isExpired) {
+    console.log('[v0] token is valid, not expired')
+    return tokenRow.access_token
+  }
 
-  // Refresh token
+  console.log('[v0] token expired, attempting refresh')
+
   if (!tokenRow.refresh_token) return null
 
   const res = await fetch('https://oauth2.googleapis.com/token', {
@@ -44,7 +51,10 @@ async function getValidAccessToken(userId: string): Promise<string | null> {
     }),
   })
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    console.log('[v0] token refresh failed:', await res.text())
+    return null
+  }
 
   const tokens = await res.json()
   const expiresAt = tokens.expires_in
@@ -55,7 +65,9 @@ async function getValidAccessToken(userId: string): Promise<string | null> {
     access_token: tokens.access_token,
     expires_at: expiresAt,
     updated_at: new Date().toISOString(),
-  }).eq('user_id', userId)
+  })
+    .eq('user_id', userId)
+    .eq('provider', 'google')
 
   return tokens.access_token
 }
@@ -69,7 +81,8 @@ export async function getCalendarConnectionStatus(): Promise<boolean> {
     .from('user_calendar_tokens')
     .select('user_id')
     .eq('user_id', user.id)
-    .single()
+    .eq('provider', 'google')
+    .maybeSingle()
 
   return !!data
 }
@@ -79,29 +92,62 @@ export async function getTodayCalendarEvents(): Promise<CalendarEvent[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const accessToken = await getValidAccessToken(user.id)
-  if (!accessToken) return []
+  const accessToken = await getValidGoogleAccessToken(user.id)
+  if (!accessToken) {
+    console.log('[v0] getTodayCalendarEvents: no access token available')
+    return []
+  }
 
-  // Build time bounds for today (user's local day — use UTC day as fallback)
+  // Use a wide window: start of today UTC-12 to end of today UTC+14
+  // This ensures all-day events and any timezone's "today" events are captured.
+  // We use a full 24h UTC window centred on today, then let the component
+  // display only events that belong to the user's date.
   const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0)
-  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+  // Start: midnight of today in the most-behind timezone (UTC-12)
+  const startOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    0, 0, 0
+  ))
+  // End: 23:59:59 of today in the most-ahead timezone (UTC+14)
+  const endOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    23, 59, 59
+  ))
+
+  const timeMin = startOfDay.toISOString()
+  const timeMax = endOfDay.toISOString()
+
+  console.log('[v0] getTodayCalendarEvents: timeMin=', timeMin, 'timeMax=', timeMax)
 
   const params = new URLSearchParams({
-    timeMin: startOfDay.toISOString(),
-    timeMax: endOfDay.toISOString(),
+    calendarId: 'primary',
+    timeMin,
+    timeMax,
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '20',
+    maxResults: '50',
   })
 
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } }
-  )
+  const apiUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`
+  console.log('[v0] Google Calendar API URL:', apiUrl)
 
-  if (!res.ok) return []
+  const res = await fetch(apiUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const errText = await res.text()
+    console.log('[v0] Google Calendar API error:', res.status, errText)
+    return []
+  }
 
   const data = await res.json()
+  console.log('[v0] Google Calendar API response: items count=', data.items?.length ?? 0, 'summary=', data.summary)
+
   return (data.items ?? []) as CalendarEvent[]
 }

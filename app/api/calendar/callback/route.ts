@@ -46,11 +46,12 @@ export async function GET(req: NextRequest) {
 
   await supabase.from('user_calendar_tokens').upsert({
     user_id: user.id,
+    provider: 'google',
     access_token: tokens.access_token,
     refresh_token: tokens.refresh_token ?? null,
     expires_at: expiresAt,
     updated_at: new Date().toISOString(),
-  }, { onConflict: 'user_id' })
+  }, { onConflict: 'user_id,provider' })
 
   return NextResponse.redirect(`${redirectBase}?calendar_connected=1`)
 }

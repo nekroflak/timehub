@@ -10,6 +10,7 @@ export async function POST() {
     .from('user_calendar_tokens')
     .delete()
     .eq('user_id', user.id)
+    .eq('provider', 'google')
 
   return NextResponse.json({ success: true })
 }
