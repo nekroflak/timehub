@@ -87,6 +87,131 @@ export async function getCalendarConnectionStatus(): Promise<boolean> {
   return !!data
 }
 
+// ----------------------------------------------------------------
+// Outlook helpers
+// ----------------------------------------------------------------
+
+async function getValidOutlookAccessToken(userId: string): Promise<string | null> {
+  const supabase = await createClient()
+
+  const { data: tokenRow } = await supabase
+    .from('user_calendar_tokens')
+    .select('access_token, refresh_token, expires_at')
+    .eq('user_id', userId)
+    .eq('provider', 'outlook')
+    .maybeSingle()
+
+  if (!tokenRow) return null
+
+  const isExpired = tokenRow.expires_at
+    ? new Date(tokenRow.expires_at) <= new Date(Date.now() + 60_000)
+    : false
+
+  if (!isExpired) return tokenRow.access_token
+
+  if (!tokenRow.refresh_token) return null
+
+  const res = await fetch('https://login.microsoftonline.com/common/oauth2/v2.0/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.MICROSOFT_CLIENT_ID!,
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+      refresh_token: tokenRow.refresh_token,
+      grant_type: 'refresh_token',
+      scope: 'Calendars.Read offline_access',
+    }),
+  })
+
+  if (!res.ok) return null
+
+  const tokens = await res.json()
+  const expiresAt = tokens.expires_in
+    ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+    : null
+
+  await supabase.from('user_calendar_tokens').update({
+    access_token: tokens.access_token,
+    expires_at: expiresAt,
+    updated_at: new Date().toISOString(),
+  })
+    .eq('user_id', userId)
+    .eq('provider', 'outlook')
+
+  return tokens.access_token
+}
+
+export async function getOutlookConnectionStatus(): Promise<boolean> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data } = await supabase
+    .from('user_calendar_tokens')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .eq('provider', 'outlook')
+    .maybeSingle()
+
+  return !!data
+}
+
+export async function getTodayOutlookEvents(): Promise<CalendarEvent[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const accessToken = await getValidOutlookAccessToken(user.id)
+  if (!accessToken) return []
+
+  const now = new Date()
+  const startOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0
+  ))
+  const endOfDay = new Date(Date.UTC(
+    now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59
+  ))
+
+  const params = new URLSearchParams({
+    startDateTime: startOfDay.toISOString(),
+    endDateTime: endOfDay.toISOString(),
+    $orderby: 'start/dateTime',
+    $top: '50',
+    $select: 'id,subject,bodyPreview,start,end,location,webLink',
+  })
+
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/me/calendarView?${params}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    }
+  )
+
+  if (!res.ok) return []
+
+  const data = await res.json()
+
+  // Normalize Microsoft Graph events to the shared CalendarEvent shape
+  return (data.value ?? []).map((e: {
+    id: string
+    subject?: string
+    bodyPreview?: string
+    start?: { dateTime?: string; timeZone?: string }
+    end?: { dateTime?: string; timeZone?: string }
+    location?: { displayName?: string }
+    webLink?: string
+  }): CalendarEvent => ({
+    id: e.id,
+    summary: e.subject ?? '(bez tytułu)',
+    description: e.bodyPreview,
+    start: { dateTime: e.start?.dateTime, timeZone: e.start?.timeZone },
+    end: { dateTime: e.end?.dateTime, timeZone: e.end?.timeZone },
+    location: e.location?.displayName,
+    htmlLink: e.webLink,
+  }))
+}
+
 export async function getTodayCalendarEvents(): Promise<CalendarEvent[]> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
