@@ -1,13 +1,19 @@
-import { getOrgTasks, getCurrentUserId, getOrgMembers } from '@/lib/actions/tasks'
+import { getOrgTasks, getCurrentUserRole, getOrgMembers, getOrgDepartments } from '@/lib/actions/tasks'
 import { TaskBoard } from '@/components/workspace/tasks/task-board'
 import { CreateTaskDialog } from '@/components/workspace/tasks/create-task-dialog'
 
 export default async function BoardPage() {
-  const [tasks, currentUserId, orgMembers] = await Promise.all([
-    getOrgTasks(),
-    getCurrentUserId(),
+  const [userCtx, orgMembers, departments] = await Promise.all([
+    getCurrentUserRole(),
     getOrgMembers(),
+    getOrgDepartments(),
   ])
+
+  const isAdmin = userCtx?.orgRole === 'admin'
+  const currentUserId = userCtx?.userId ?? ''
+
+  // Tasks are already scoped by role inside getOrgTasks
+  const tasks = await getOrgTasks()
 
   return (
     <div className="p-8">
@@ -15,13 +21,24 @@ export default async function BoardPage() {
         <div>
           <h1 className="text-3xl font-bold">Tablica zadań</h1>
           <p className="text-muted-foreground mt-1">
-            Zadania organizacji — widoczne dla wszystkich członków
+            {isAdmin
+              ? 'Zadania całej organizacji — możesz filtrować według działu'
+              : 'Zadania Twojego działu'}
           </p>
         </div>
-        <CreateTaskDialog />
+        <CreateTaskDialog
+          departments={departments}
+          isAdmin={isAdmin}
+        />
       </div>
 
-      <TaskBoard tasks={tasks} currentUserId={currentUserId ?? ''} orgMembers={orgMembers} />
+      <TaskBoard
+        tasks={tasks}
+        currentUserId={currentUserId}
+        orgMembers={orgMembers}
+        departments={departments}
+        isAdmin={isAdmin}
+      />
     </div>
   )
 }

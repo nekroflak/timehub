@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, UserCheck, AlertTriangle, User } from 'lucide-react'
+import { MessageSquare, UserCheck, AlertTriangle, User, Layers } from 'lucide-react'
 import type { Task } from '@/lib/types'
 import { TaskDetailSheet } from './task-detail-sheet'
 
@@ -18,6 +18,7 @@ interface TaskCardProps {
   task: Task
   currentUserId: string
   orgMembers: OrgMember[]
+  showDepartment?: boolean
 }
 
 function isOverdue(task: Task): boolean {
@@ -27,7 +28,7 @@ function isOverdue(task: Task): boolean {
   return nowMs - assignedMs >= 48 * 60 * 60 * 1000
 }
 
-export function TaskCard({ task, currentUserId, orgMembers }: TaskCardProps) {
+export function TaskCard({ task, currentUserId, orgMembers, showDepartment = false }: TaskCardProps) {
   const [detailOpen, setDetailOpen] = useState(false)
   const overdue = isOverdue(task)
 
@@ -65,6 +66,14 @@ export function TaskCard({ task, currentUserId, orgMembers }: TaskCardProps) {
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
             {task.description}
           </p>
+        )}
+
+        {/* Department badge — admin only */}
+        {showDepartment && task.department && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+            <Layers className="h-3 w-3" />
+            <span>{task.department.name}</span>
+          </div>
         )}
 
         {/* Footer */}
