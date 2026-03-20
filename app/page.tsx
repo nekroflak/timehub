@@ -301,9 +301,13 @@ export default function LandingPage() {
               href="https://www.linkedin.com/in/kamilurban-/"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
+              className="flex items-center gap-3 rounded-lg border bg-background px-6 py-4 hover:bg-muted transition-colors"
             >
-              <Linkedin className="h-5 w-5 text-primary" />
+              <Linkedin className="h-5 w-5 text-primary shrink-0" />
+              <div className="text-left">
+                <p className="text-xs text-muted-foreground">LinkedIn</p>
+                <p className="font-semibold">Zobacz profil</p>
+              </div>
             </a>
           </div>
         </div>
