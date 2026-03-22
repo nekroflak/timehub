@@ -46,14 +46,23 @@ interface ReviewDialogProps {
 function ReviewDialog({ request, decision, onClose }: ReviewDialogProps) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [partialMsg, setPartialMsg] = useState<string | null>(null)
   const [comment, setComment] = useState('')
 
   function handleSubmit() {
     setError(null)
+    setPartialMsg(null)
     startTransition(async () => {
       const result = await reviewLeaveRequest(request.id, decision, comment || undefined)
       if (result.error) {
         setError(result.error)
+      } else if (result.partialConflict) {
+        // Show partial-success message and let admin close manually
+        setPartialMsg(
+          result.daysAdded !== undefined && result.daysSkipped !== undefined
+            ? `Wniosek został zaakceptowany. Dodano ${result.daysAdded} dni urlopu do kalendarza. ${result.daysSkipped} ${result.daysSkipped === 1 ? 'dzień nie został dodany' : 'dni nie zostało dodanych'} z powodu istniejących wpisów.`
+            : 'Wniosek został zaakceptowany. Część dni nie została dodana do kalendarza z powodu istniejących wpisów.'
+        )
       } else {
         onClose()
       }
@@ -96,19 +105,30 @@ function ReviewDialog({ request, decision, onClose }: ReviewDialogProps) {
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onClose}>Anuluj</Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isPending}
-              variant={decision === 'rejected' ? 'destructive' : 'default'}
-            >
-              {isPending
-                ? 'Zapisywanie...'
-                : decision === 'approved' ? 'Zatwierdź' : 'Odrzuć'
-              }
-            </Button>
-          </div>
+          {partialMsg ? (
+            <>
+              <p className="text-sm text-amber-700 dark:text-amber-400 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2">
+                {partialMsg}
+              </p>
+              <div className="flex justify-end">
+                <Button onClick={onClose}>Zamknij</Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose}>Anuluj</Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isPending}
+                variant={decision === 'rejected' ? 'destructive' : 'default'}
+              >
+                {isPending
+                  ? 'Zapisywanie...'
+                  : decision === 'approved' ? 'Zatwierdź' : 'Odrzuć'
+                }
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
