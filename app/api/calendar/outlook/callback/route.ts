@@ -7,27 +7,37 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get('state')
   const error = searchParams.get('error')
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+  // Normalize base URL — must exactly match the redirect_uri used in the authorize request
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/$/, '')
+  const redirectUri = `${appUrl}/api/calendar/outlook/callback`
   const redirectBase = `${appUrl}/workspace/today`
+
+  console.log('[v0] Outlook callback — appUrl:', appUrl)
+  console.log('[v0] Outlook callback — redirect_uri used in token exchange:', redirectUri)
+  console.log('[v0] Outlook callback — code present:', !!code, '| error:', error)
 
   if (error || !code || !userId) {
     return NextResponse.redirect(`${redirectBase}?calendar_error=outlook`)
   }
 
   // Exchange code for tokens via Microsoft identity platform
+  const tokenPayload = new URLSearchParams({
+    code,
+    client_id: process.env.MICROSOFT_CLIENT_ID!,
+    client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
+    redirect_uri: redirectUri,
+    grant_type: 'authorization_code',
+    scope: 'Calendars.Read offline_access openid profile',
+  })
+
+  console.log('[v0] Outlook callback — token exchange payload redirect_uri:', redirectUri)
+
   const tokenRes = await fetch(
     'https://login.microsoftonline.com/common/oauth2/v2.0/token',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code,
-        client_id: process.env.MICROSOFT_CLIENT_ID!,
-        client_secret: process.env.MICROSOFT_CLIENT_SECRET!,
-        redirect_uri: `${appUrl}/api/calendar/outlook/callback`,
-        grant_type: 'authorization_code',
-        scope: 'Calendars.Read offline_access openid profile',
-      }),
+      body: tokenPayload,
     }
   )
 
