@@ -117,7 +117,7 @@ function ReviewDialog({ request, decision, onClose }: ReviewDialogProps) {
 
 interface Props {
   requests: LeaveRequest[]
-  members: { id: string; profile?: { full_name?: string | null; email?: string | null } | null }[]
+  members: { id: string; user_id: string; profile?: { full_name?: string | null; email?: string | null } | null }[]
 }
 
 export function AdminLeaveRequestsTable({ requests, members }: Props) {
@@ -129,6 +129,7 @@ export function AdminLeaveRequestsTable({ requests, members }: Props) {
   const filtered = requests.filter(r => {
     if (statusFilter !== 'all' && r.status !== statusFilter) return false
     if (typeFilter !== 'all' && r.type !== typeFilter) return false
+    // Compare against user_id (auth UUID), not the membership row PK
     if (memberFilter !== 'all' && r.user_id !== memberFilter) return false
     return true
   })
@@ -176,8 +177,8 @@ export function AdminLeaveRequestsTable({ requests, members }: Props) {
           <SelectContent>
             <SelectItem value="all">Wszyscy pracownicy</SelectItem>
             {members.map(m => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.profile?.full_name || m.profile?.email || m.id}
+              <SelectItem key={m.id} value={m.user_id}>
+                {m.profile?.full_name || m.profile?.email || m.user_id}
               </SelectItem>
             ))}
           </SelectContent>
@@ -203,7 +204,8 @@ export function AdminLeaveRequestsTable({ requests, members }: Props) {
             </thead>
             <tbody className="divide-y">
               {filtered.map(req => {
-                const workerName = req.profile?.full_name || req.profile?.email || '—'
+                  // Fall back to a truncated user_id if profile join returned null
+                  const workerName = req.profile?.full_name || req.profile?.email || `ID: ${req.user_id.slice(0, 8)}…`
                 const days = dayCount(req.date_from, req.date_to)
                 return (
                   <tr key={req.id} className="hover:bg-muted/30 transition-colors">
