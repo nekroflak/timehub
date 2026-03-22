@@ -175,18 +175,37 @@ export async function getOrgLeaveRequests(filters?: {
   return enriched
 }
 
+// Returns working days (Mon–Fri) in a date range, inclusive.
+function getWorkingDays(from: string, to: string): string[] {
+  const days: string[] = []
+  const current = new Date(from)
+  const end = new Date(to)
+  // Normalize to midnight UTC to avoid timezone drift
+  current.setUTCHours(0, 0, 0, 0)
+  end.setUTCHours(0, 0, 0, 0)
+
+  while (current <= end) {
+    const dow = current.getUTCDay() // 0=Sun, 6=Sat
+    if (dow !== 0 && dow !== 6) {
+      days.push(current.toISOString().slice(0, 10)) // YYYY-MM-DD
+    }
+    current.setUTCDate(current.getUTCDate() + 1)
+  }
+  return days
+}
+
 export async function reviewLeaveRequest(
   requestId: string,
   decision: 'approved' | 'rejected',
   adminComment?: string
-): Promise<{ error?: string; success?: boolean }> {
+): Promise<{ error?: string; success?: boolean; daysAdded?: number; daysSkipped?: number; partialConflict?: boolean }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Unauthorized' }
 
-  // Ensure the request belongs to this org
+  // Fetch the full request to know type and date range
   const { data: existing } = await ctx.supabase
     .from('leave_requests')
-    .select('id, user_id')
+    .select('id, user_id, type, date_from, date_to')
     .eq('id', requestId)
     .eq('organization_id', ctx.organizationId)
     .single()
@@ -198,7 +217,8 @@ export async function reviewLeaveRequest(
     return { error: 'Nie możesz zatwierdzać własnych wniosków' }
   }
 
-  const { error } = await ctx.supabase
+  // Update the leave request status
+  const { error: updateError } = await ctx.supabase
     .from('leave_requests')
     .update({
       status: decision,
@@ -210,7 +230,88 @@ export async function reviewLeaveRequest(
     .eq('id', requestId)
     .eq('organization_id', ctx.organizationId)
 
-  if (error) return { error: error.message }
+  if (updateError) return { error: updateError.message }
+
+  // Calendar sync — only for approved vacation requests
+  if (decision === 'approved' && existing.type === 'vacation') {
+    const workingDays = getWorkingDays(existing.date_from, existing.date_to)
+
+    if (workingDays.length > 0) {
+      // Fetch all existing time_entries for this user in the date range
+      const { data: existingEntries } = await ctx.supabase
+        .from('time_entries')
+        .select('date, type')
+        .eq('user_id', existing.user_id)
+        .eq('organization_id', ctx.organizationId)
+        .in('date', workingDays)
+
+      const existingByDate = new Map(
+        (existingEntries ?? []).map(e => [e.date, e.type])
+      )
+
+      const toInsert: {
+        organization_id: string
+        user_id: string
+        date: string
+        type: string
+        hours: number
+        description: string
+        created_at: string
+        updated_at: string
+      }[] = []
+      let daysSkipped = 0
+
+      for (const day of workingDays) {
+        const existingType = existingByDate.get(day)
+
+        if (existingType === undefined) {
+          // No entry — create vacation
+          toInsert.push({
+            organization_id: ctx.organizationId,
+            user_id: existing.user_id,
+            date: day,
+            type: 'vacation',
+            hours: 8,
+            description: 'Urlop (zatwierdzony wniosek)',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+        } else if (existingType === 'vacation') {
+          // Already a vacation entry — skip silently (no duplicate)
+          daysSkipped++
+        } else {
+          // Conflict with a non-vacation entry — skip, do not overwrite
+          daysSkipped++
+        }
+      }
+
+      if (toInsert.length > 0) {
+        const { error: insertError } = await ctx.supabase
+          .from('time_entries')
+          .insert(toInsert)
+
+        if (insertError) {
+          // Approval already succeeded — don't fail, just report
+          revalidatePath('/admin/requests')
+          return {
+            success: true,
+            daysAdded: 0,
+            daysSkipped: workingDays.length,
+            partialConflict: true,
+          }
+        }
+      }
+
+      revalidatePath('/admin/requests')
+      revalidatePath('/workspace/time')
+      return {
+        success: true,
+        daysAdded: toInsert.length,
+        daysSkipped,
+        partialConflict: daysSkipped > 0,
+      }
+    }
+  }
 
   revalidatePath('/admin/requests')
   return { success: true }
