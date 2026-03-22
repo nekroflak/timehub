@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Layers,
   KanbanSquare,
+  FileCheck,
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -32,6 +33,7 @@ const navigation = [
   { name: 'Zespół', href: '/admin/team', icon: Users },
   { name: 'Działy', href: '/admin/departments', icon: Layers },
   { name: 'Tablica zadań', href: '/admin/board', icon: KanbanSquare },
+  { name: 'Wnioski', href: '/admin/requests', icon: FileCheck },
   { name: 'Raporty czasu', href: '/admin/time-reports', icon: Clock },
   { name: 'Zatwierdzenia', href: '/admin/approvals', icon: CheckSquare },
 ]

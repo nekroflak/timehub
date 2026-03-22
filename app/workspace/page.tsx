@@ -48,6 +48,18 @@ export default async function WorkspaceDashboard() {
         icon: 'tasks',
       })
     }
+    if (alerts.rejectedLeaveRequests > 0) {
+      alertItems.push({
+        id: 'rejected-leave',
+        message: alerts.rejectedLeaveRequests === 1
+          ? 'Twój wniosek został odrzucony'
+          : `${alerts.rejectedLeaveRequests} Twoich wniosków zostało odrzuconych`,
+        detail: 'Sprawdź komentarz administratora w sekcji Wnioski.',
+        href: '/workspace/requests',
+        severity: 'error',
+        icon: 'approval',
+      })
+    }
   }
 
   return (

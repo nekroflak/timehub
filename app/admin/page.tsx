@@ -51,6 +51,17 @@ export default async function AdminDashboard() {
         icon: 'mail',
       })
     }
+    if (alerts.pendingLeaveRequests > 0) {
+      alertItems.push({
+        id: 'leave-requests',
+        message: alerts.pendingLeaveRequests === 1
+          ? '1 wniosek urlopowy czeka na rozpatrzenie'
+          : `${alerts.pendingLeaveRequests} wnioski urlopowe czekają na rozpatrzenie`,
+        href: '/admin/requests',
+        severity: 'warning',
+        icon: 'approval',
+      })
+    }
   }
 
   return (
