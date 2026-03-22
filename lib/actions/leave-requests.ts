@@ -25,14 +25,17 @@ async function getAdminContext() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
 
+  // Accept both 'admin' and 'super_admin' roles for org-level admin access
   const { data: membership } = await supabase
     .from('organization_members')
     .select('organization_id, role')
     .eq('user_id', user.id)
-    .eq('role', 'admin')
+    .in('role', ['admin', 'super_admin'])
     .single()
 
   if (!membership) return null
+
+  console.log('[v0] leave-requests getAdminContext — organizationId:', membership.organization_id, '| role:', membership.role)
 
   return { supabase, user, organizationId: membership.organization_id }
 }
@@ -117,26 +120,59 @@ export async function getOrgLeaveRequests(filters?: {
   type?: LeaveRequestType | 'all'
 }) {
   const ctx = await getAdminContext()
-  if (!ctx) return []
+  if (!ctx) {
+    console.log('[v0] getOrgLeaveRequests — no admin context, returning []')
+    return []
+  }
 
-  let query = ctx.supabase
+  console.log('[v0] getOrgLeaveRequests — querying for organization_id:', ctx.organizationId)
+  console.log('[v0] getOrgLeaveRequests — active filters:', JSON.stringify(filters))
+
+  // Step 1: fetch raw rows without any join first so we always get the count
+  let rawQuery = ctx.supabase
     .from('leave_requests')
-    .select('*, profile:profiles!leave_requests_user_id_fkey(id, full_name, email)')
+    .select('*')
     .eq('organization_id', ctx.organizationId)
     .order('created_at', { ascending: false })
 
   if (filters?.status && filters.status !== 'all') {
-    query = query.eq('status', filters.status)
+    rawQuery = rawQuery.eq('status', filters.status)
   }
   if (filters?.userId) {
-    query = query.eq('user_id', filters.userId)
+    rawQuery = rawQuery.eq('user_id', filters.userId)
   }
   if (filters?.type && filters.type !== 'all') {
-    query = query.eq('type', filters.type)
+    rawQuery = rawQuery.eq('type', filters.type)
   }
 
-  const { data } = await query
-  return data || []
+  const { data: rawRows, error: rawError } = await rawQuery
+
+  console.log('[v0] getOrgLeaveRequests — raw rows count:', rawRows?.length ?? 0)
+  if (rawError) console.log('[v0] getOrgLeaveRequests — raw query error:', rawError.message)
+
+  if (!rawRows || rawRows.length === 0) return []
+
+  // Step 2: try to enrich with profiles; if join fails, fall back to raw rows
+  const userIds = [...new Set(rawRows.map(r => r.user_id))]
+  const { data: profiles, error: profileError } = await ctx.supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+
+  if (profileError) {
+    console.log('[v0] getOrgLeaveRequests — profile join error:', profileError.message, '— serving raw rows as fallback')
+  }
+
+  const profileMap = new Map((profiles ?? []).map(p => [p.id, p]))
+
+  const enriched = rawRows.map(r => ({
+    ...r,
+    profile: profileMap.get(r.user_id) ?? null,
+  }))
+
+  console.log('[v0] getOrgLeaveRequests — enriched rows count:', enriched.length)
+
+  return enriched
 }
 
 export async function reviewLeaveRequest(
