@@ -215,7 +215,7 @@ export async function getAdminAlerts() {
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth() + 1
 
-  const [submissionsResult, overdueTasksResult, pendingInvitesResult] = await Promise.all([
+  const [submissionsResult, overdueTasksResult, pendingInvitesResult, pendingLeaveResult] = await Promise.all([
     ctx.supabase
       .from('timesheet_submissions')
       .select('id', { count: 'exact', head: true })
@@ -234,12 +234,18 @@ export async function getAdminAlerts() {
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', ctx.organizationId)
       .eq('status', 'pending'),
+    ctx.supabase
+      .from('leave_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'pending'),
   ])
 
   return {
     pendingApprovals: submissionsResult.count || 0,
     overdueTasksCount: overdueTasksResult.count || 0,
     pendingInvitations: pendingInvitesResult.count || 0,
+    pendingLeaveRequests: pendingLeaveResult.count || 0,
   }
 }
 

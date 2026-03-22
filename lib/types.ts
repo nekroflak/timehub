@@ -141,6 +141,41 @@ export interface TaskComment {
   author?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
 }
 
+// Leave Requests module
+export type LeaveRequestType = 'vacation' | 'home_office' | 'private_leave' | 'sick_leave'
+export type LeaveRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export const LEAVE_TYPE_LABELS: Record<LeaveRequestType, string> = {
+  vacation: 'Urlop',
+  home_office: 'Home office',
+  private_leave: 'Wyjście prywatne',
+  sick_leave: 'Chorobowe',
+}
+
+export const LEAVE_STATUS_LABELS: Record<LeaveRequestStatus, string> = {
+  pending: 'Oczekuje',
+  approved: 'Zaakceptowany',
+  rejected: 'Odrzucony',
+}
+
+export interface LeaveRequest {
+  id: string
+  organization_id: string
+  user_id: string
+  type: LeaveRequestType
+  date_from: string
+  date_to: string
+  worker_note: string | null
+  admin_comment: string | null
+  status: LeaveRequestStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+  updated_at: string
+  // joined
+  profile?: Pick<Profile, 'id' | 'full_name' | 'email'> | null
+}
+
 // Resolved user context used across layouts
 export interface UserContext {
   profile: Profile

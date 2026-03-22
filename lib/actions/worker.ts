@@ -351,7 +351,9 @@ export async function getWorkerAlerts() {
   const currentMonth = now.getMonth() + 1
   const overdueThreshold = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
 
-  const [submissionResult, overdueTasksResult] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [submissionResult, overdueTasksResult, rejectedLeaveResult] = await Promise.all([
     ctx.supabase
       .from('timesheet_submissions')
       .select('status, comment')
@@ -367,15 +369,23 @@ export async function getWorkerAlerts() {
       .eq('assigned_to', ctx.user.id)
       .eq('status', 'assigned')
       .lte('assigned_at', overdueThreshold),
+    ctx.supabase
+      .from('leave_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', ctx.user.id)
+      .eq('organization_id', ctx.organizationId)
+      .eq('status', 'rejected')
+      .gte('reviewed_at', sevenDaysAgo),
   ])
 
   const submission = submissionResult.data
   const overdueCount = overdueTasksResult.count || 0
 
   return {
-    submissionStatus: submission?.status ?? null,  // null means not submitted
+    submissionStatus: submission?.status ?? null,
     rejectionComment: submission?.status === 'rejected' ? (submission.comment ?? null) : null,
     overdueTasksCount: overdueCount,
+    rejectedLeaveRequests: rejectedLeaveResult.count || 0,
     currentMonthLabel: `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
   }
 }
