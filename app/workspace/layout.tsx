@@ -10,7 +10,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('*, organization:organizations(*), profile:profiles(*)')
+    .select('organization_id, organization:organizations(name), profile:profiles(full_name, email)')
     .eq('user_id', user.id)
     .single()
 

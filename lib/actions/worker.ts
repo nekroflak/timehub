@@ -11,7 +11,7 @@ async function getWorkerContext() {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('*, organization:organizations(*)')
+    .select('id, organization_id, role, department_id, organization:organizations(name)')
     .eq('user_id', user.id)
     .single()
 
@@ -86,12 +86,23 @@ export async function getWorkerStats() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
 
-  const [monthEntriesResult, notesResult, configResult] = await Promise.all([
+  const [workEntriesResult, vacationCountResult, notesResult, configResult] = await Promise.all([
+    // Only fetch work entries — avoids downloading vacation rows into JS
     ctx.supabase
       .from('time_entries')
-      .select('hours, type')
+      .select('hours')
       .eq('user_id', ctx.user.id)
       .eq('organization_id', ctx.organizationId)
+      .eq('type', 'work')
+      .gte('date', startOfMonth)
+      .lte('date', endOfMonth),
+    // Count vacation days directly in DB
+    ctx.supabase
+      .from('time_entries')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', ctx.user.id)
+      .eq('organization_id', ctx.organizationId)
+      .eq('type', 'vacation')
       .gte('date', startOfMonth)
       .lte('date', endOfMonth),
     ctx.supabase
@@ -108,10 +119,9 @@ export async function getWorkerStats() {
 
   const hoursPerDay = configResult.data?.hours_per_day || 8
   const workingDays = countWorkingDays(now.getFullYear(), now.getMonth())
-  const entries = monthEntriesResult.data || []
 
-  const workHours = entries.filter(e => e.type === 'work').reduce((sum, e) => sum + (e.hours || 0), 0)
-  const vacationDays = entries.filter(e => e.type === 'vacation').length
+  const workHours = (workEntriesResult.data || []).reduce((sum, e) => sum + (e.hours || 0), 0)
+  const vacationDays = vacationCountResult.count || 0
   const vacationHours = vacationDays * hoursPerDay
   const expectedHours = Math.max(0, (workingDays - vacationDays) * hoursPerDay)
   const overtimeHours = Math.max(0, workHours - expectedHours)
@@ -387,6 +397,122 @@ export async function getWorkerAlerts() {
     overdueTasksCount: overdueCount,
     rejectedLeaveRequests: rejectedLeaveResult.count || 0,
     currentMonthLabel: `${currentYear}-${String(currentMonth).padStart(2, '0')}`,
+  }
+}
+
+// Combined loader for the time tracking page — resolves context once
+// instead of 5+ separate getWorkerContext() calls
+export async function getTimePageData(month: string) {
+  const ctx = await getWorkerContext()
+  if (!ctx) return null
+
+  const [year, monthNum] = month.split('-').map(Number)
+  const startDate = new Date(year, monthNum - 1, 1).toISOString().split('T')[0]
+  const endDate = new Date(year, monthNum, 0).toISOString().split('T')[0]
+
+  const [entriesResult, configResult, notesCountResult, submissionResult, profileResult] =
+    await Promise.all([
+      ctx.supabase
+        .from('time_entries')
+        .select('*')
+        .eq('user_id', ctx.user.id)
+        .eq('organization_id', ctx.organizationId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true }),
+      ctx.supabase
+        .from('user_config')
+        .select('*')
+        .eq('user_id', ctx.user.id)
+        .single(),
+      ctx.supabase
+        .from('notes')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', ctx.user.id)
+        .eq('organization_id', ctx.organizationId),
+      ctx.supabase
+        .from('timesheet_submissions')
+        .select('*')
+        .eq('user_id', ctx.user.id)
+        .eq('organization_id', ctx.organizationId)
+        .eq('year', year)
+        .eq('month', monthNum)
+        .single(),
+      ctx.supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', ctx.user.id)
+        .single(),
+    ])
+
+  const config = configResult.data || {
+    hours_per_day: 8,
+    hourly_rate: 50,
+    overtime_multiplier: 1.5,
+    currency: 'PLN',
+  }
+
+  const entries = entriesResult.data || []
+  const workingDays = countWorkingDays(year, monthNum - 1)
+  const workEntries = entries.filter((e: { type: string }) => e.type === 'work')
+  const vacationEntries = entries.filter((e: { type: string }) => e.type === 'vacation')
+  const workHours = workEntries.reduce((sum: number, e: { hours: number }) => sum + (e.hours || 0), 0)
+  const vacationDays = vacationEntries.length
+  const effectiveWorkingDays = Math.max(0, workingDays - vacationDays)
+  const expectedHours = effectiveWorkingDays * config.hours_per_day
+  const overtimeHours = Math.max(0, workHours - expectedHours)
+  const undertimeHours = Math.max(0, expectedHours - workHours)
+  const overtimePay = overtimeHours * config.hourly_rate * config.overtime_multiplier
+  const regularPay = Math.min(workHours, expectedHours) * config.hourly_rate
+
+  const now = new Date()
+  const currentStartOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+  const currentEndOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+  // Fetch current-month hours separately only if displaying a different month
+  let hoursThisMonth = workHours
+  if (month !== `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`) {
+    const { data: currentMonthEntries } = await ctx.supabase
+      .from('time_entries')
+      .select('hours, type')
+      .eq('user_id', ctx.user.id)
+      .eq('organization_id', ctx.organizationId)
+      .gte('date', currentStartOfMonth)
+      .lte('date', currentEndOfMonth)
+    hoursThisMonth = (currentMonthEntries || [])
+      .filter((e: { type: string }) => e.type === 'work')
+      .reduce((sum: number, e: { hours: number }) => sum + (e.hours || 0), 0)
+  }
+
+  return {
+    entries,
+    submission: submissionResult.data || null,
+    config,
+    summary: {
+      workingDays,
+      vacationDays,
+      effectiveWorkingDays,
+      expectedHours,
+      workHours,
+      overtimeHours,
+      undertimeHours,
+      overtimePay,
+      regularPay,
+      totalPay: regularPay + overtimePay,
+      currency: config.currency,
+      hoursPerDay: config.hours_per_day,
+    },
+    stats: {
+      hoursThisMonth,
+      vacationDays,
+      overtimeHours,
+      expectedHours,
+      totalNotes: notesCountResult.count || 0,
+      organizationName: (ctx.membership.organization as { name?: string })?.name || 'Organization',
+    },
+    profile: profileResult.data,
+    userEmail: ctx.user.email || '',
+    organizationName: (ctx.membership.organization as { name?: string })?.name || 'Organization',
   }
 }
 
