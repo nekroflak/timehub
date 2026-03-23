@@ -16,7 +16,7 @@ async function getAdminContext() {
 
   const { data: membership } = await supabase
     .from('organization_members')
-    .select('*, organization:organizations(*)')
+    .select('id, organization_id, role, organization:organizations(name)')
     .eq('user_id', user.id)
     .eq('role', 'admin')
     .single()
@@ -39,10 +39,12 @@ export async function getAdminStats() {
       .from('organization_members')
       .select('id', { count: 'exact', head: true })
       .eq('organization_id', ctx.organizationId),
+    // Fetch only hours column — aggregated in JS but with minimal payload
     ctx.supabase
       .from('time_entries')
       .select('hours')
       .eq('organization_id', ctx.organizationId)
+      .eq('type', 'work')
       .gte('date', startOfMonth)
       .lte('date', endOfMonth),
     ctx.supabase

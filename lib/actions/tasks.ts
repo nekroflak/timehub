@@ -58,7 +58,7 @@ export async function getOrgTasks(filterDepartmentId?: string): Promise<Task[]> 
   const { data: tasks, error } = await query
   if (error || !tasks) return []
 
-  // Collect unique user IDs for profiles
+  // Collect IDs for enrichment queries
   const userIds = Array.from(
     new Set([
       ...tasks.map(t => t.assigned_to).filter(Boolean),
@@ -66,43 +66,31 @@ export async function getOrgTasks(filterDepartmentId?: string): Promise<Task[]> 
     ])
   ) as string[]
 
-  let profileMap: Record<string, { id: string; full_name: string | null; email: string }> = {}
-  if (userIds.length > 0) {
-    const { data: profiles } = await ctx.supabase
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', userIds)
-    if (profiles) {
-      for (const p of profiles) profileMap[p.id] = p
-    }
-  }
-
-  // Collect department IDs for department name lookup
   const deptIds = Array.from(new Set(tasks.map(t => t.department_id).filter(Boolean))) as string[]
-  let deptMap: Record<string, { id: string; name: string }> = {}
-  if (deptIds.length > 0) {
-    const { data: depts } = await ctx.supabase
-      .from('departments')
-      .select('id, name')
-      .in('id', deptIds)
-    if (depts) {
-      for (const d of depts) deptMap[d.id] = d
-    }
-  }
-
-  // Count comments per task
   const taskIds = tasks.map(t => t.id)
-  let commentCounts: Record<string, number> = {}
-  if (taskIds.length > 0) {
-    const { data: counts } = await ctx.supabase
-      .from('task_comments')
-      .select('task_id')
-      .in('task_id', taskIds)
-    if (counts) {
-      for (const c of counts) {
-        commentCounts[c.task_id] = (commentCounts[c.task_id] || 0) + 1
-      }
-    }
+
+  // Run all three enrichment queries in parallel
+  const [profilesResult, deptsResult, commentCountsResult] = await Promise.all([
+    userIds.length > 0
+      ? ctx.supabase.from('profiles').select('id, full_name, email').in('id', userIds)
+      : Promise.resolve({ data: [] }),
+    deptIds.length > 0
+      ? ctx.supabase.from('departments').select('id, name').in('id', deptIds)
+      : Promise.resolve({ data: [] }),
+    taskIds.length > 0
+      ? ctx.supabase.from('task_comments').select('task_id').in('task_id', taskIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const profileMap: Record<string, { id: string; full_name: string | null; email: string }> = {}
+  for (const p of profilesResult.data ?? []) profileMap[p.id] = p
+
+  const deptMap: Record<string, { id: string; name: string }> = {}
+  for (const d of deptsResult.data ?? []) deptMap[d.id] = d
+
+  const commentCounts: Record<string, number> = {}
+  for (const c of commentCountsResult.data ?? []) {
+    commentCounts[c.task_id] = (commentCounts[c.task_id] || 0) + 1
   }
 
   return tasks.map(t => ({
@@ -375,7 +363,7 @@ export async function getOrgDepartments(): Promise<Department[]> {
 
   const { data } = await ctx.supabase
     .from('departments')
-    .select('*')
+    .select('id, name, organization_id')
     .eq('organization_id', ctx.organizationId)
     .order('name', { ascending: true })
 

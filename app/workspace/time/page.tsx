@@ -1,44 +1,31 @@
-import { getMyTimeEntries, getMonthlySummary, getUserConfig, getWorkerStats, getTimesheetSubmission } from '@/lib/actions/worker'
+import { getTimePageData } from '@/lib/actions/worker'
 import { WorkspaceTimeClient } from '@/components/workspace/workspace-time-client'
-import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function TimeTrackingPage() {
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const data = await getTimePageData(currentMonth)
 
-  const [entries, summary, config, stats, submission] = await Promise.all([
-    getMyTimeEntries(currentMonth),
-    getMonthlySummary(currentMonth),
-    getUserConfig(),
-    getWorkerStats(),
-    getTimesheetSubmission(currentMonth),
-  ])
-
-  const { data: profile } = user
-    ? await supabase.from('profiles').select('full_name, email').eq('id', user.id).single()
-    : { data: null }
-
-  const pdfConfig = {
-    hours_per_day: config?.hours_per_day ?? 8,
-    hourly_rate: config?.hourly_rate ?? 50,
-    overtime_multiplier: config?.overtime_multiplier ?? 1.5,
-    currency: config?.currency ?? 'PLN',
-  }
+  if (!data) redirect('/auth/login')
 
   return (
     <div className="p-8">
       <WorkspaceTimeClient
-        orgName={stats?.organizationName ?? 'Organizacja'}
-        workerName={profile?.full_name ?? ''}
-        workerEmail={profile?.email ?? user?.email ?? ''}
+        orgName={data.organizationName}
+        workerName={data.profile?.full_name ?? ''}
+        workerEmail={data.profile?.email ?? data.userEmail}
         initialMonth={currentMonth}
-        initialEntries={entries}
-        initialSummary={summary}
-        initialSubmission={submission}
-        config={pdfConfig}
+        initialEntries={data.entries}
+        initialSummary={data.summary}
+        initialSubmission={data.submission}
+        config={{
+          hours_per_day: data.config.hours_per_day,
+          hourly_rate: data.config.hourly_rate,
+          overtime_multiplier: data.config.overtime_multiplier,
+          currency: data.config.currency,
+        }}
       />
     </div>
   )
