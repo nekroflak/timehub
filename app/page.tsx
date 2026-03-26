@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { FeaturePreview } from '@/components/landing/feature-preview'
 import { 
   Clock, 
   Users, 
@@ -175,6 +176,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      <FeaturePreview />
 
       {/* How It Works Section */}
       <section id="how-it-works" className="py-20 md:py-32 bg-card border-y">
