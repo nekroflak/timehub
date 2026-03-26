@@ -7,25 +7,24 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'TeamHub - Workforce Management Platform',
-  description: 'Multi-tenant workforce management platform with time tracking and team collaboration',
-  generator: 'v0.app',
+  title: {
+    default: 'SimplyDesk',
+    template: '%s — SimplyDesk',
+  },
+  description: 'SimplyDesk to prosty system dla małych firm do zarządzania czasem pracy, wnioskami, zadaniami i akceptacjami w jednym miejscu.',
+  applicationName: 'SimplyDesk',
+  openGraph: {
+    title: 'SimplyDesk — czas pracy, wnioski i zadania w jednym miejscu',
+    description: 'SimplyDesk to prosty system dla małych firm do zarządzania czasem pracy, wnioskami, zadaniami i akceptacjami w jednym miejscu.',
+    type: 'website',
+  },
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
     ],
-    apple: '/apple-icon.png',
+    apple: '/apple-touch-icon.png',
+    shortcut: '/favicon-32.png',
   },
 }
 
@@ -35,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <body className="font-sans antialiased">
         {children}
         <Analytics />
