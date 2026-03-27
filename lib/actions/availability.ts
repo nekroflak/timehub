@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 
 // Working-hours window defaults
 const DEFAULT_WORK_START_H = 8
@@ -29,7 +30,7 @@ export interface AvailabilityResult {
   workEndH: number
 }
 
-// ─── Context helper ──────────────────────────────────────────────────────────
+// ─── Context helper (viewer auth) ────────────────────────────────────────────
 
 async function getViewerContext() {
   const supabase = await createClient()
@@ -57,7 +58,7 @@ export async function getOrgTeamMembers(): Promise<TeamMember[]> {
     .from('organization_members')
     .select('user_id, profile:profiles(full_name, email)')
     .eq('organization_id', ctx.organizationId)
-    .neq('user_id', ctx.user.id)   // exclude self
+    .neq('user_id', ctx.user.id)
     .order('user_id')
 
   return (data ?? []).map((m: any) => ({
@@ -76,7 +77,11 @@ export async function getTeamAvailability(
   const ctx = await getViewerContext()
   if (!ctx) return null
 
-  // Security: target must be in the same organization
+  console.log('[v0] availability — viewer:', ctx.user.id)
+  console.log('[v0] availability — targetUserId:', targetUserId)
+  console.log('[v0] availability — date:', date)
+
+  // Security: verify target belongs to the SAME organization using the viewer's auth client
   const { data: targetMembership } = await ctx.supabase
     .from('organization_members')
     .select('user_id, profile:profiles(full_name, email)')
@@ -84,7 +89,10 @@ export async function getTeamAvailability(
     .eq('user_id', targetUserId)
     .single()
 
-  if (!targetMembership) return null
+  if (!targetMembership) {
+    console.log('[v0] availability — DENIED: target not in same org')
+    return null
+  }
 
   const member: TeamMember = {
     userId: targetUserId,
@@ -92,22 +100,21 @@ export async function getTeamAvailability(
     email: (targetMembership.profile as any)?.email ?? '',
   }
 
-  // Fetch user config for working hours
-  const { data: config } = await ctx.supabase
-    .from('user_config')
-    .select('hours_per_day')
-    .eq('user_id', targetUserId)
-    .maybeSingle()
+  // Use service client for reading target user's data that is protected by RLS
+  // (RLS policies only allow users to read their own rows)
+  const svc = createServiceClient()
 
-  const hoursPerDay = config?.hours_per_day ?? 8
-  // Work window: 08:00 to (08 + hours_per_day)
-  const workStartH = DEFAULT_WORK_START_H
-  const workEndH = Math.min(24, workStartH + hoursPerDay)
+  // Fetch data sources in parallel using service client for cross-user reads
+  const [configResult, timeEntryResult, leaveResult, calendarTokenResult] = await Promise.all([
+    // user_config — may or may not have RLS, use svc to be safe
+    svc
+      .from('user_config')
+      .select('hours_per_day')
+      .eq('user_id', targetUserId)
+      .maybeSingle(),
 
-  // Fetch data sources in parallel
-  const [timeEntryResult, leaveResult, calendarTokenResult] = await Promise.all([
-    // 1. time_entries for this date
-    ctx.supabase
+    // time_entries — check for vacation entries on this date
+    svc
       .from('time_entries')
       .select('type, start_time, end_time, hours')
       .eq('user_id', targetUserId)
@@ -115,8 +122,8 @@ export async function getTeamAvailability(
       .eq('date', date)
       .maybeSingle(),
 
-    // 2. approved leave requests spanning this date
-    ctx.supabase
+    // leave_requests — approved leaves spanning this date
+    svc
       .from('leave_requests')
       .select('type, date_from, date_to')
       .eq('user_id', targetUserId)
@@ -125,30 +132,43 @@ export async function getTeamAvailability(
       .lte('date_from', date)
       .gte('date_to', date),
 
-    // 3. check if user has a calendar token (for busy-block fetch)
-    ctx.supabase
+    // user_calendar_tokens — RLS blocks viewer from seeing another user's tokens,
+    // so we MUST use the service client here
+    svc
       .from('user_calendar_tokens')
       .select('provider, access_token, refresh_token, expires_at')
       .eq('user_id', targetUserId)
       .order('provider'),
   ])
 
-  // Determine full-day absence
+  const hoursPerDay = configResult.data?.hours_per_day ?? 8
+  const workStartH = DEFAULT_WORK_START_H
+  const workEndH = Math.min(24, workStartH + hoursPerDay)
+
   const hasVacationEntry = timeEntryResult.data?.type === 'vacation'
   const hasApprovedLeave = (leaveResult.data ?? []).length > 0
   const isFullDayAbsent = hasVacationEntry || hasApprovedLeave
 
-  // Build busy hour-blocks from calendar tokens (no event details exposed)
+  const calendarTokens = calendarTokenResult.data ?? []
+  console.log('[v0] availability — calendar providers found:', calendarTokens.map((t: any) => t.provider))
+  console.log('[v0] availability — isFullDayAbsent:', isFullDayAbsent, '(vacation entry:', hasVacationEntry, ', approved leave:', hasApprovedLeave, ')')
+
+  // Build busy hour-blocks from target's calendar tokens (no event details exposed)
   const busyHours = new Set<number>()
 
-  if (!isFullDayAbsent && calendarTokenResult.data && calendarTokenResult.data.length > 0) {
-    for (const token of calendarTokenResult.data) {
-      const freshToken = await getFreshToken(ctx.supabase, targetUserId, token)
-      if (!freshToken) continue
+  if (!isFullDayAbsent && calendarTokens.length > 0) {
+    for (const token of calendarTokens) {
+      const freshToken = await getFreshToken(svc, targetUserId, token)
+      if (!freshToken) {
+        console.log('[v0] availability — could not get fresh token for provider:', token.provider)
+        continue
+      }
 
       const busyBlocks = token.provider === 'google'
         ? await fetchGoogleBusyBlocks(freshToken, date)
         : await fetchOutlookBusyBlocks(freshToken, date)
+
+      console.log('[v0] availability — busy blocks from', token.provider, ':', busyBlocks.length, busyBlocks)
 
       for (const { startH, endH } of busyBlocks) {
         for (let h = startH; h < endH; h++) busyHours.add(h)
@@ -156,7 +176,9 @@ export async function getTeamAvailability(
     }
   }
 
-  // Build hourly slots for full visible range (06:00–21:00)
+  console.log('[v0] availability — busyHours set:', [...busyHours].sort((a, b) => a - b))
+
+  // Build hourly slots for visible range (06:00–20:00)
   const slots: HourSlot[] = []
   for (let h = 6; h <= 20; h++) {
     let status: SlotStatus
@@ -181,10 +203,10 @@ export async function getTeamAvailability(
   return { member, date, slots, isFullDayAbsent, workStartH, workEndH }
 }
 
-// ─── Token refresh helpers ────────────────────────────────────────────────────
+// ─── Token refresh helpers (service client, writes back refreshed token) ─────
 
 async function getFreshToken(
-  supabase: any,
+  svc: ReturnType<typeof createServiceClient>,
   userId: string,
   token: { provider: string; access_token: string; refresh_token: string | null; expires_at: string | null }
 ): Promise<string | null> {
@@ -233,7 +255,7 @@ async function getFreshToken(
     }
 
     if (newAccessToken) {
-      await supabase
+      await svc
         .from('user_calendar_tokens')
         .update({ access_token: newAccessToken, expires_at: expiresAt, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
@@ -255,7 +277,6 @@ async function fetchGoogleBusyBlocks(accessToken: string, date: string): Promise
     const startOfDay = `${date}T00:00:00Z`
     const endOfDay = `${date}T23:59:59Z`
 
-    // Use freebusy API — returns only busy intervals, no event details at all
     const res = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
       method: 'POST',
       headers: {
@@ -270,7 +291,10 @@ async function fetchGoogleBusyBlocks(accessToken: string, date: string): Promise
       cache: 'no-store',
     })
 
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.log('[v0] availability — Google FreeBusy error:', res.status, await res.text())
+      return []
+    }
     const data = await res.json()
     const busy: Array<{ start: string; end: string }> = data.calendars?.primary?.busy ?? []
 
@@ -278,7 +302,8 @@ async function fetchGoogleBusyBlocks(accessToken: string, date: string): Promise
       startH: new Date(b.start).getUTCHours(),
       endH: new Date(b.end).getUTCHours() + (new Date(b.end).getUTCMinutes() > 0 ? 1 : 0),
     }))
-  } catch {
+  } catch (e) {
+    console.log('[v0] availability — Google FreeBusy exception:', e)
     return []
   }
 }
@@ -288,7 +313,6 @@ async function fetchOutlookBusyBlocks(accessToken: string, date: string): Promis
     const startOfDay = `${date}T00:00:00Z`
     const endOfDay = `${date}T23:59:59Z`
 
-    // Use getSchedule API — returns only FreeBusyStatus, no event details
     const res = await fetch('https://graph.microsoft.com/v1.0/me/calendar/getSchedule', {
       method: 'POST',
       headers: {
@@ -304,7 +328,10 @@ async function fetchOutlookBusyBlocks(accessToken: string, date: string): Promis
       cache: 'no-store',
     })
 
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.log('[v0] availability — Outlook getSchedule error:', res.status, await res.text())
+      return []
+    }
     const data = await res.json()
     const scheduleItems: Array<{ scheduleItems?: Array<{ start: { dateTime: string }; end: { dateTime: string } }> }>
       = data.value ?? []
@@ -319,7 +346,8 @@ async function fetchOutlookBusyBlocks(accessToken: string, date: string): Promis
       }
     }
     return blocks
-  } catch {
+  } catch (e) {
+    console.log('[v0] availability — Outlook getSchedule exception:', e)
     return []
   }
 }
