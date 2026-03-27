@@ -5,6 +5,7 @@ import {
   getOutlookConnectionStatus,
   getTodayOutlookEvents,
 } from '@/lib/actions/calendar'
+import { syncMyCalendarAvailability } from '@/lib/actions/availability-sync'
 import { getOrgTasks, getCurrentUserId } from '@/lib/actions/tasks'
 import { CalendarConnectCard } from '@/components/workspace/today/calendar-connect-card'
 import { CalendarEventsList } from '@/components/workspace/today/calendar-events-list'
@@ -23,6 +24,11 @@ async function CalendarSection() {
     isGoogleConnected ? getTodayCalendarEvents() : Promise.resolve([] as CalendarEvent[]),
     isOutlookConnected ? getTodayOutlookEvents() : Promise.resolve([] as CalendarEvent[]),
   ])
+
+  // Sync availability cache in the background — does not block rendering.
+  // Only runs for connected providers so unused paths are skipped.
+  if (isGoogleConnected) void syncMyCalendarAvailability('google')
+  if (isOutlookConnected) void syncMyCalendarAvailability('outlook')
 
   const calendarEvents = [...googleEvents, ...outlookEvents].sort((a, b) => {
     const ta = a.start.dateTime ?? a.start.date ?? ''
