@@ -14,6 +14,7 @@ import {
   KanbanSquare,
   Sun,
   FileCheck,
+  Users2,
 } from 'lucide-react'
 
 interface WorkspaceSidebarProps {
@@ -31,6 +32,7 @@ const navigation = [
   { name: 'Mój dzień', href: '/workspace/today', icon: Sun },
   { name: 'Czas pracy', href: '/workspace/time', icon: Clock },
   { name: 'Wnioski', href: '/workspace/requests', icon: FileCheck },
+  { name: 'Dostępność', href: '/workspace/availability', icon: Users2 },
   { name: 'Notatki', href: '/workspace/notes', icon: FileText },
   { name: 'Tablica', href: '/workspace/board', icon: KanbanSquare },
 ]
