@@ -35,7 +35,6 @@ const navigation = [
   { name: 'Działy', href: '/admin/departments', icon: Layers },
   { name: 'Tablica zadań', href: '/admin/board', icon: KanbanSquare },
   { name: 'Wnioski', href: '/admin/requests', icon: FileCheck },
-  { name: 'Dostępność', href: '/admin/availability', icon: Users2 },
   { name: 'Raporty czasu', href: '/admin/time-reports', icon: Clock },
   { name: 'Zatwierdzenia', href: '/admin/approvals', icon: CheckSquare },
 ]
