@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { LeaveRequestType, LeaveRequestStatus } from '@/lib/types'
+import { syncLeaveRequestBlocks } from '@/lib/actions/availability-sync'
 
 async function getWorkerContext() {
   const supabase = await createClient()
@@ -232,7 +233,17 @@ export async function reviewLeaveRequest(
 
   if (updateError) return { error: updateError.message }
 
-  // Calendar sync — only for approved vacation requests
+  // Availability cache sync — for ALL approved leave types (vacation, home_office, etc.)
+  if (decision === 'approved') {
+    void syncLeaveRequestBlocks(
+      existing.user_id,
+      ctx.organizationId,
+      existing.date_from,
+      existing.date_to
+    )
+  }
+
+  // Calendar time_entries sync — only for approved vacation requests
   if (decision === 'approved' && existing.type === 'vacation') {
     const workingDays = getWorkingDays(existing.date_from, existing.date_to)
 
