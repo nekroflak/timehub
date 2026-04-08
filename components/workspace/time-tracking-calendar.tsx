@@ -16,9 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { ChevronLeft, ChevronRight, Trash2, Briefcase, Umbrella, TrendingUp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Trash2, Briefcase, Umbrella, TrendingUp, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { TimeEntry } from '@/lib/types'
+import { getHolidaysForMonth } from '@/lib/polish-holidays'
 
 interface MonthlySummary {
   workingDays: number
@@ -62,6 +63,10 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
 
   const [year, monthIdx] = yearMonth.split('-').map(Number)
   const month = monthIdx - 1 // 0-indexed for Date constructor
+
+  // Get Polish holidays for this month
+  const holidays = getHolidaysForMonth(year, month)
+  const holidayMap = new Map(holidays.map(h => [h.date, h.name]))
 
   const firstDayOfMonth = new Date(year, month, 1)
   const lastDayOfMonth = new Date(year, month + 1, 0)
@@ -210,11 +215,13 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const entry = getEntryForDate(date)
+    const holidayName = holidayMap.get(date)
     const isToday = new Date().toISOString().split('T')[0] === date
     const isVacation = entry?.type === 'vacation'
     const isWork = entry?.type === 'work'
     const dow = new Date(year, month, day).getDay()
     const isWeekend = dow === 0 || dow === 6
+    const isHoliday = !!holidayName
 
     days.push(
       <button
@@ -227,7 +234,8 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
           isToday && 'ring-2 ring-primary',
           isVacation && 'bg-amber-50 border-amber-200',
           isWork && 'bg-primary/10 border-primary/20',
-          isWeekend && !entry && 'bg-muted/40 opacity-60',
+          isHoliday && !entry && 'bg-green-50 border-green-200',
+          isWeekend && !entry && !isHoliday && 'bg-muted/40 opacity-60',
         )}
       >
         <div className={cn('font-medium text-sm', isWeekend && 'text-muted-foreground')}>{day}</div>
@@ -248,6 +256,12 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
             {(entry.hours || 0) > hoursPerDay && (
               <span className="ml-1 text-xs text-orange-500 font-medium">OT</span>
             )}
+          </div>
+        )}
+        {isHoliday && !entry && (
+          <div className="mt-1 flex items-center gap-1">
+            <Star className="h-3 w-3 text-green-600 fill-green-600" />
+            <span className="text-xs font-medium text-green-700 line-clamp-2">{holidayName}</span>
           </div>
         )}
       </button>
@@ -336,6 +350,10 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded bg-amber-100 border border-amber-200" />
               <span className="text-xs text-muted-foreground">Urlop</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-green-50 border border-green-200" />
+              <span className="text-xs text-muted-foreground">Święto</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-xs font-medium text-orange-500">OT</span>

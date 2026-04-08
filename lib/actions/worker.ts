@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { countWorkingDaysExcludingHolidays } from '@/lib/polish-holidays'
 
 async function getWorkerContext() {
   const supabase = await createClient()
@@ -20,15 +21,9 @@ async function getWorkerContext() {
   return { supabase, user, membership, organizationId: membership.organization_id }
 }
 
-// Returns working days in a month (Mon–Fri)
+// Returns working days in a month (Mon–Fri) excluding Polish public holidays
 function countWorkingDays(year: number, month: number): number {
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  let count = 0
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dow = new Date(year, month, d).getDay()
-    if (dow !== 0 && dow !== 6) count++
-  }
-  return count
+  return countWorkingDaysExcludingHolidays(year, month)
 }
 
 export async function getUserConfig() {
