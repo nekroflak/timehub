@@ -97,7 +97,7 @@ function drawHeader(doc: jsPDF, opts: {
   doc.line(14, 55, pageW - 14, 55)
 }
 
-function drawFooter(doc: jsPDF, pageNumber: number) {
+function drawFooter(doc: jsPDF, pageNumber?: number) {
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   doc.setDrawColor(210, 210, 210)
@@ -108,18 +108,11 @@ function drawFooter(doc: jsPDF, pageNumber: number) {
   doc.setCharSpace(0)
   doc.text('TimeHub - system rejestracji czasu pracy', 14, pageH - 9)
   doc.text(
-    `Strona ${pageNumber}`,
-    pageW - 14, pageH - 9,
+    `Strona ${pageNumber ?? doc.getNumberOfPages()}`,
+    pageW - 14,
+    pageH - 9,
     { align: 'right' }
   )
-}
-
-function addFootersToAllPages(doc: jsPDF) {
-  const totalPages = doc.getNumberOfPages()
-  for (let page = 1; page <= totalPages; page++) {
-    doc.setPage(page)
-    drawFooter(doc, page)
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +187,7 @@ export function generateWorkerPdf(opts: WorkerPdfOptions) {
       1: { fontStyle: 'bold', textColor: [20, 20, 20], halign: 'right', cellWidth: 30 },
     },
     margin: { left: 14, right: 14 },
+    didDrawPage: (data) => drawFooter(doc, data.pageNumber),
   })
 
   const afterSummary = (doc as any).lastAutoTable.finalY + 10
@@ -252,9 +246,10 @@ export function generateWorkerPdf(opts: WorkerPdfOptions) {
       6: { cellWidth: 'auto' },
     },
     margin: { left: 14, right: 14 },
+    didDrawPage: (data) => drawFooter(doc, data.pageNumber),
   })
 
-  addFootersToAllPages(doc)
+  drawFooter(doc)
 
   const safeName = pl(opts.workerName || opts.workerEmail)
     .replace(/\s+/g, '_')
@@ -357,6 +352,7 @@ export function generateCompanyPdf(opts: CompanyPdfOptions) {
       4: { cellWidth: 35, halign: 'right' },
     },
     margin: { left: 14, right: 14 },
+    didDrawPage: (data) => drawFooter(doc, data.pageNumber),
   })
 
   const afterTable = (doc as any).lastAutoTable.finalY + 10
@@ -399,9 +395,10 @@ export function generateCompanyPdf(opts: CompanyPdfOptions) {
       4: { cellWidth: 'auto' },
     },
     margin: { left: 14, right: 14 },
+    didDrawPage: (data) => drawFooter(doc, data.pageNumber),
   })
 
-  addFootersToAllPages(doc)
+  drawFooter(doc)
 
   const safeOrg = pl(opts.orgName).replace(/\s+/g, '_').toLowerCase().replace(/[^a-z0-9_]/g, '')
   doc.save(`raport_firma_${opts.month}_${safeOrg}.pdf`)
