@@ -363,7 +363,7 @@ export async function getOrgDepartments(): Promise<Department[]> {
 
   const { data } = await ctx.supabase
     .from('departments')
-    .select('id, name, organization_id')
+    .select('id, name, organization_id, created_at, updated_at')
     .eq('organization_id', ctx.organizationId)
     .order('name', { ascending: true })
 
