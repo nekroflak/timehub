@@ -67,6 +67,9 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
   // Get Polish holidays for this month
   const holidays = getHolidaysForMonth(year, month)
   const holidayMap = new Map(holidays.map(h => [h.date, h.name]))
+  
+  console.log('[v0] TimeTrackingCalendar — year:', year, 'month (0-indexed):', month, 'monthIdx (1-based):', monthIdx)
+  console.log('[v0] TimeTrackingCalendar — holidays for this month:', holidays)
 
   const firstDayOfMonth = new Date(year, month, 1)
   const lastDayOfMonth = new Date(year, month + 1, 0)
@@ -217,6 +220,13 @@ export function TimeTrackingCalendar({ initialEntries, summary: initialSummary, 
     const entry = getEntryForDate(date)
     const holidayName = holidayMap.get(date)
     const isToday = new Date().toISOString().split('T')[0] === date
+    
+    // Debug: log May 1, May 3, Nov 1, Nov 11, Dec 25, Dec 26
+    if ((month === 4 && (day === 1 || day === 3)) || 
+        (month === 10 && (day === 1 || day === 11)) || 
+        (month === 11 && (day === 25 || day === 26 || day === 24))) {
+      console.log('[v0] Day check:', date, '| holidayName:', holidayName, '| hasEntry:', !!entry)
+    }
     const isVacation = entry?.type === 'vacation'
     const isWork = entry?.type === 'work'
     const dow = new Date(year, month, day).getDay()
