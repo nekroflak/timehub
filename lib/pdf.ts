@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { TimeEntry, Profile } from '@/lib/types'
+import { countWorkingDaysExcludingHolidays } from '@/lib/polish-holidays'
 
 // ---------------------------------------------------------------------------
 // Polish character transliteration for jsPDF built-in fonts
@@ -52,13 +53,7 @@ function formatGeneratedDate() {
 }
 
 function countWorkingDays(year: number, month: number): number {
-  const days = new Date(year, month + 1, 0).getDate()
-  let count = 0
-  for (let d = 1; d <= days; d++) {
-    const dow = new Date(year, month, d).getDay()
-    if (dow !== 0 && dow !== 6) count++
-  }
-  return count
+  return countWorkingDaysExcludingHolidays(year, month)
 }
 
 function drawHeader(doc: jsPDF, opts: {
